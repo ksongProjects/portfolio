@@ -1,0 +1,130 @@
+import type {
+  AppLocation,
+  ConstellationPosition,
+  ReferenceStar,
+  SkyCatalogStar,
+  ZodiacSign,
+} from '@/lib/types'
+
+export type ViewCenter = {
+  azimuth: number
+  altitude: number
+}
+
+export type ScreenPoint = {
+  x: number
+  y: number
+}
+
+export type Bounds = {
+  minX: number
+  maxX: number
+  minY: number
+  maxY: number
+}
+
+export type PositionedCatalogStar = SkyCatalogStar & {
+  position: ConstellationPosition
+}
+
+export type PositionedReferenceStar = ReferenceStar & {
+  position: ConstellationPosition
+}
+
+export type SkySnapshotEntry = {
+  sign: ZodiacSign
+  position: ConstellationPosition
+  stars: PositionedCatalogStar[]
+}
+
+export type SkySnapshot = {
+  location: AppLocation
+  now: Date
+  actualSky: 'day' | 'night'
+  allPositions: SkySnapshotEntry[]
+  fieldStarPositions: PositionedCatalogStar[]
+  referenceStarPositions: PositionedReferenceStar[]
+  current: {
+    time: Date
+    position: ConstellationPosition
+  }
+}
+
+export type VisibleFieldStar = PositionedCatalogStar & {
+  x: number
+  y: number
+  radius: number
+  opacity: number
+  haloRadius: number
+  color: string
+  visible: boolean
+}
+
+export type VisibleConstellationPoint = PositionedCatalogStar & {
+  x: number
+  y: number
+  radius: number
+  visible: boolean
+}
+
+export type VisibleConstellationEdge = {
+  startIndex: number
+  endIndex: number
+  start: ScreenPoint
+  end: ScreenPoint
+}
+
+export type VisibleConstellation = {
+  sign: ZodiacSign
+  position: ConstellationPosition
+  center: ScreenPoint
+  projected: VisibleConstellationPoint[]
+  visibleEdges: VisibleConstellationEdge[]
+  bounds: Bounds
+  labelText: string
+  labelX: number
+  labelY: number
+  labelFontSize: number
+  labelWidth: number
+  visible: boolean
+}
+
+export type VisibleReferenceStar = PositionedReferenceStar & {
+  x: number
+  y: number
+  labelX: number
+  labelY: number
+  labelFontSize: number
+  labelWidth: number
+  visible: boolean
+}
+
+export type AltitudeGuide = {
+  altitude: number
+  y: number
+  major: boolean
+  label: string
+}
+
+export type AzimuthGuide = {
+  azimuth: number
+  x: number
+  major: boolean
+  label: string
+}
+
+export type SkyScene = {
+  horizonY: number
+  horizonLine: boolean
+  visibleFieldStars: VisibleFieldStar[]
+  visibleConstellations: VisibleConstellation[]
+  visibleReferenceStars: VisibleReferenceStar[]
+  altitudeGuides: AltitudeGuide[]
+  azimuthGuides: AzimuthGuide[]
+}
+
+export type SkySurface = {
+  width: number
+  height: number
+  dpr: number
+}

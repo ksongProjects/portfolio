@@ -1,0 +1,2 @@
+-- Sky catalog records are populated by the application sync job:
+-- npm run sky:sync

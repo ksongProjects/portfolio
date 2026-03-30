@@ -1,0 +1,820 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;700&display=swap');
+
+:root {
+  --canvas: #08111f;
+  --ink: #eef4ff;
+  --muted: rgba(220, 230, 255, 0.72);
+  --line: rgba(141, 167, 232, 0.18);
+  --line-strong: rgba(192, 209, 255, 0.34);
+  --content-max: 80rem;
+  --panel:
+    radial-gradient(circle at 18% 14%, rgba(98, 126, 214, 0.24), transparent 28%),
+    radial-gradient(circle at 78% 18%, rgba(231, 236, 255, 0.08), transparent 22%),
+    linear-gradient(180deg, rgba(8, 16, 30, 0.98), rgba(11, 22, 48, 0.98));
+  --mono: 'IBM Plex Mono', monospace;
+  --body: 'Space Grotesk', sans-serif;
+  --serif: 'Instrument Serif', serif;
+  color-scheme: dark;
+  font-family: var(--body);
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--canvas);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scrollbar-gutter: stable both-edges;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  background: var(--panel);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol,
+figure,
+dl,
+dt,
+dd {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+}
+
+code {
+  padding: 0.18rem 0.42rem;
+  border-radius: 0.35rem;
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--mono);
+  font-size: 0.88rem;
+}
+
+#app {
+  width: 100%;
+}
+
+.site-shell {
+  position: relative;
+}
+
+.section-marker,
+.mono-row__index,
+.sky-fact__label,
+.zodiac-rail__label {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.section-marker,
+.mono-row__index {
+  color: rgba(220, 230, 255, 0.58);
+}
+
+.site-index {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  z-index: 70;
+  transform: translateY(-50%);
+}
+
+.site-index__inner {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem 1.2rem 1rem 1rem;
+  border: 1px solid rgba(151, 178, 242, 0.18);
+  border-left: 0;
+  border-radius: 0 1.1rem 1.1rem 0;
+  background: rgba(6, 14, 29, 0.8);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 48px rgba(2, 6, 14, 0.32);
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.site-index:hover .site-index__inner,
+.site-index:focus-within .site-index__inner {
+  border-color: rgba(186, 206, 255, 0.24);
+  background: rgba(8, 17, 34, 0.92);
+}
+
+.site-index__links,
+.mono-row__links {
+  display: flex;
+  align-items: center;
+}
+
+.site-index__links {
+  display: grid;
+  gap: 0.72rem;
+}
+
+.site-index a[data-target] {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 8.5rem;
+  padding: 0.08rem 0;
+  border-bottom: 1px solid transparent;
+}
+
+.site-index a[data-target] span {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(220, 230, 255, 0.42);
+}
+
+.site-index a[data-target] strong {
+  font-size: 0.84rem;
+  font-weight: 500;
+}
+
+.site-index a[data-target].is-active {
+  border-bottom-color: rgba(238, 244, 255, 0.82);
+}
+
+.page-stack {
+  display: grid;
+  gap: 0;
+}
+
+.zodiac-rail {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  z-index: 68;
+  display: flex;
+  align-items: stretch;
+  transform: translateY(-50%) translateX(1rem);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    visibility 180ms ease;
+}
+
+.site-shell[data-active-section='stars'] .zodiac-rail {
+  transform: translateY(-50%);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.zodiac-rail__drawer,
+.zodiac-rail__inner {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.85rem;
+  min-height: 0;
+  max-height: calc(100svh - 4rem);
+  border: 1px solid rgba(151, 178, 242, 0.18);
+  background: rgba(6, 14, 29, 0.82);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 48px rgba(2, 6, 14, 0.28);
+}
+
+.zodiac-rail__drawer {
+  width: min(22rem, calc(100vw - 14rem));
+  padding: 1rem 1rem 1rem 1.1rem;
+  border-right: 0;
+  border-radius: 1.1rem 0 0 1.1rem;
+}
+
+.zodiac-rail__inner {
+  width: min(12rem, calc(100vw - 1.5rem));
+  padding: 1rem 1rem 1rem 1.1rem;
+  border-right: 0;
+  border-radius: 0;
+}
+
+.zodiac-rail__label {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(220, 230, 255, 0.58);
+}
+
+.section-head,
+.monograph-intro,
+.monograph-list,
+.mono-row__body {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.portfolio,
+.stars-demo {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.portfolio::before,
+.stars-demo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--panel);
+  pointer-events: none;
+}
+
+.portfolio__inner,
+.stars-demo__inner {
+  position: relative;
+  z-index: 1;
+  width: min(var(--content-max), 100%);
+  margin: 0 auto;
+}
+
+.portfolio {
+  min-height: 100svh;
+  color: var(--ink);
+}
+
+.portfolio__inner {
+  display: grid;
+  gap: 2rem;
+  padding: clamp(4rem, 8vw, 6rem) clamp(1.5rem, 6vw, 6rem) clamp(3rem, 6vw, 5rem);
+}
+
+.section-head h2 {
+  max-width: 18ch;
+  font-family: var(--serif);
+  font-size: clamp(2.2rem, 5vw, 4.6rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.section-head--stars {
+  gap: 0.2rem;
+  margin-bottom: 0.2rem;
+}
+
+.section-head--stars h2 {
+  max-width: none;
+  font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.monograph-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.82fr) minmax(0, 1.18fr);
+  gap: 1.2rem 2.6rem;
+  align-items: start;
+}
+
+.monograph-intro h3 {
+  font-family: var(--serif);
+  font-size: clamp(3rem, 5vw, 5rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+}
+
+.monograph-role {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(220, 230, 255, 0.6);
+}
+
+.monograph-intro > p:not(.monograph-role),
+.mono-row__strap,
+.mono-row__copy {
+  color: var(--muted);
+}
+
+.monograph-socials {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+}
+
+.monograph-socials a {
+  display: grid;
+  gap: 0.12rem;
+  width: fit-content;
+  padding: 0.12rem 0;
+}
+
+.monograph-socials strong {
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.monograph-socials span {
+  font-size: 0.78rem;
+  color: rgba(220, 230, 255, 0.56);
+}
+
+.monograph-jump {
+  color: var(--ink);
+}
+
+.monograph-jump a {
+  width: fit-content;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.mono-row {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr) auto;
+  gap: 1rem 1.2rem;
+  align-items: start;
+  padding: 1.15rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.mono-row__body h3 {
+  font-size: clamp(1.4rem, 2.2vw, 2rem);
+  font-weight: 500;
+  line-height: 1.02;
+}
+
+
+.mono-row__links {
+  font-family: var(--mono);
+  gap: 0.85rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mono-row__links a {
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.stars-demo {
+  --sky-ink: #eef4ff;
+  --sky-muted: rgba(220, 230, 255, 0.72);
+  --sky-line: rgba(141, 167, 232, 0.2);
+  --sky-panel: linear-gradient(180deg, rgba(9, 18, 33, 0.96), rgba(13, 25, 46, 0.96));
+  --sky-surface: rgba(255, 255, 255, 0.03);
+  display: grid;
+  height: 100svh;
+  min-height: 100svh;
+  padding: 0;
+  color: var(--sky-ink);
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.stars-demo__inner {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 100%;
+  padding: clamp(1rem, 2vw, 1.5rem) clamp(1.5rem, 6vw, 6rem);
+}
+
+.section-head--stars .section-marker,
+.section-head--stars h2,
+.sky-stage__status,
+.sky-fact__label,
+.sky-fact__value,
+.zodiac-list button span,
+.zodiac-list button strong {
+  color: inherit;
+}
+
+.stars-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 0;
+}
+
+.sky-stage {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.sky-stage__header {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 0;
+}
+
+.sky-stage__tools {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+
+.sky-stage__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 0.85rem;
+}
+
+.sky-fact__label {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.sky-stage__status,
+.zodiac-list button span,
+.sky-fact__value {
+  color: var(--sky-muted);
+}
+
+.sky-stage__status {
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sky-setup {
+  display: grid;
+  align-content: center;
+  gap: 1rem;
+  min-height: min(70svh, 46rem);
+  padding: clamp(1.4rem, 3vw, 2.4rem);
+  border: 1px solid rgba(151, 178, 242, 0.18);
+  background:
+    radial-gradient(circle at 78% 22%, rgba(165, 186, 255, 0.14), transparent 24%),
+    linear-gradient(180deg, rgba(9, 18, 33, 0.92), rgba(13, 25, 46, 0.95));
+}
+
+.sky-setup__eyebrow,
+.sky-setup__steps li {
+  font-family: var(--mono);
+}
+
+.sky-setup__eyebrow {
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(220, 230, 255, 0.58);
+}
+
+.sky-setup h3 {
+  max-width: 16ch;
+  font-family: var(--serif);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 0.94;
+  letter-spacing: -0.04em;
+}
+
+.sky-setup > p {
+  max-width: 46rem;
+  color: var(--sky-muted);
+}
+
+.sky-setup__steps {
+  display: grid;
+  gap: 0.6rem;
+  padding-left: 1.2rem;
+  color: var(--sky-muted);
+}
+
+.sky-tool-toggle {
+  border: 0;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.32);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sky-canvas {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  border: 1px solid var(--sky-line);
+  background: var(--sky-surface);
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.sky-canvas.is-interactive {
+  cursor: pointer;
+}
+
+.sky-canvas.is-dragging {
+  cursor: grabbing;
+}
+
+.sky-details {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 0.2rem;
+}
+
+.sky-details-stack {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.sky-portrait {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.15rem;
+  border: 1px solid rgba(151, 178, 242, 0.16);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.sky-portrait__image {
+  width: 100%;
+  aspect-ratio: 12 / 7;
+  border: 1px solid rgba(151, 178, 242, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sky-portrait__image--cover {
+  object-fit: cover;
+}
+
+.sky-portrait__image--contain {
+  object-fit: contain;
+  padding: 0.5rem;
+}
+
+.sky-portrait__caption {
+  display: grid;
+  gap: 0.28rem;
+  padding: 0 0.1rem 0.1rem;
+}
+
+.sky-portrait__eyebrow {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.54);
+}
+
+.sky-portrait__title {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+}
+
+.sky-portrait__subtitle {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.sky-portrait__fact {
+  font-size: 0.73rem;
+  line-height: 1.35;
+  color: var(--sky-muted);
+  text-wrap: pretty;
+}
+
+.sky-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+}
+
+.sky-fact {
+  display: grid;
+  gap: 0.16rem;
+  min-width: 0;
+}
+
+.sky-fact--wide {
+  grid-column: 1 / -1;
+}
+
+.sky-fact__label {
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sky-fact__value {
+  font-size: 0.72rem;
+  line-height: 1.2;
+  text-wrap: pretty;
+}
+
+.zodiac-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem 0.8rem;
+}
+
+.zodiac-list button {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0 0 0.35rem;
+  border: 0;
+  border-bottom: 1px solid var(--sky-line);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.zodiac-list button.is-active {
+  border-bottom-color: currentColor;
+}
+
+.zodiac-rail .zodiac-list {
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+}
+
+.zodiac-rail .zodiac-list button {
+  gap: 0.18rem;
+  padding-bottom: 0.45rem;
+}
+
+.zodiac-rail .zodiac-list button strong {
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.zodiac-rail .zodiac-list button span {
+  font-size: 0.62rem;
+  line-height: 1.2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .site-index__inner {
+    transition: none;
+  }
+}
+
+@media (min-width: 781px) {
+  html {
+    scroll-snap-type: y proximity;
+  }
+}
+
+@media (max-width: 1200px) {
+  .monograph-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .section-head--stars h2 {
+    white-space: normal;
+  }
+
+  .stars-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sky-stage__tools {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sky-stage__toggles {
+    justify-content: flex-start;
+  }
+
+  .sky-stage__tools {
+    justify-items: start;
+  }
+
+  .sky-stage__status {
+    text-align: left;
+  }
+}
+
+@media (max-width: 780px) {
+  .portfolio__inner,
+  .stars-demo__inner {
+    padding: 1rem;
+  }
+
+  .stars-demo {
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
+  }
+
+  .mono-row {
+    grid-template-columns: 1fr;
+  }
+
+  .site-index {
+    top: 1rem;
+    left: 1rem;
+    transform: none;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .site-index__inner {
+    border-left: 1px solid rgba(151, 178, 242, 0.18);
+    border-radius: 999px;
+    padding: 0.75rem 1rem;
+  }
+
+  .site-index__links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .site-index a[data-target] {
+    min-width: auto;
+  }
+
+  .zodiac-rail {
+    top: auto;
+    right: 1rem;
+    bottom: 1rem;
+    transform: translateX(1rem);
+    align-items: flex-end;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .site-shell[data-active-section='stars'] .zodiac-rail {
+    transform: translateX(0);
+  }
+
+  .zodiac-rail__drawer {
+    width: min(17rem, calc(100vw - 13.5rem));
+    max-height: min(70svh, 28rem);
+    border-radius: 1rem 0 0 1rem;
+    padding: 0.85rem 0.9rem;
+  }
+
+  .zodiac-rail__inner {
+    width: min(10.75rem, calc(100vw - 2rem));
+    max-height: min(70svh, 28rem);
+    border-radius: 0;
+    padding: 0.85rem 0.9rem;
+  }
+
+  .sky-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .sky-canvas {
+    min-height: 24rem;
+  }
+}

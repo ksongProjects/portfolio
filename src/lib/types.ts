@@ -1,0 +1,98 @@
+export type SocialLink = {
+  label: string
+  href: string
+  handle: string
+}
+
+export type Profile = {
+  name: string
+  role: string
+  intro: string
+}
+
+export type ProjectSeed = {
+  slug: string
+  title: string
+  strapline: string
+  description: string
+  repoHref: string
+  liveHref?: string
+  liveLabel?: string
+  palette: [string, string]
+  accent: string
+}
+
+export type Project = ProjectSeed & {
+  index: string
+}
+
+export type SkyCatalogStar = {
+  hipId: number
+  name?: string | null
+  ra: number
+  dec: number
+  magnitude: number
+  color?: string | null
+  summary?: string | null
+  imageUrl?: string | null
+}
+
+export type ZodiacSign = {
+  key: string
+  name: string
+  symbol: string
+  dates: string
+  centerRa: number
+  centerDec: number
+  accent: string
+  note: string
+  brightest: string
+  brightestStarSummary?: string | null
+  brightestStarImageUrl?: string | null
+  brightestStarSubtitle?: string | null
+  stars: SkyCatalogStar[]
+  edges: Array<[number, number]>
+}
+
+export type ReferenceStar = {
+  name: string
+  ra: number
+  dec: number
+  color: string
+  priority: number
+  constellation: string
+  fact: string
+  imageUrl?: string | null
+  zodiacSignKey?: string
+}
+
+export type SkyDataset = {
+  zodiacSigns: ZodiacSign[]
+  zodiacSignsByYear: ZodiacSign[]
+  fieldStars: SkyCatalogStar[]
+  referenceStars: ReferenceStar[]
+}
+
+export type AppLocation = {
+  label: string
+  latitude: number
+  longitude: number
+  timezone: string
+  source: 'fallback' | 'geolocation'
+  detail: string
+}
+
+export type ConstellationPosition = {
+  azimuth: number
+  altitude: number
+}
+
+export type SkyFocus =
+  | {
+      kind: 'sign'
+      signKey: string
+    }
+  | {
+      kind: 'star'
+      starName: string
+    }
