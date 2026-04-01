@@ -31,6 +31,7 @@ export function buildSkyViewportScene(
   positions: SkySnapshot['allPositions'],
   fieldStarPositions: SkySnapshot['fieldStarPositions'],
   referencePositions: SkySnapshot['referenceStarPositions'],
+  moon: SkySnapshot['moon'],
   viewCenter: ViewCenter,
   width: number,
   height: number,
@@ -204,6 +205,14 @@ export function buildSkyViewportScene(
     .sort((first, second) => second.priority - first.priority)
     .slice(0, maxReferenceStars)
 
+  const projectedMoon = projectSkyPositionSafe(
+    moon.position,
+    viewCenter,
+    width,
+    height,
+    verticalViewAngle,
+  )
+
   const altitudeGuides = showGuides
     ? Array.from(
         { length: Math.floor(180 / SKY_GRID_INCREMENT) + 1 },
@@ -279,6 +288,28 @@ export function buildSkyViewportScene(
         ? {
             paths: horizonPaths,
             labelPoint: getGuideLabelPoint(horizonPaths, 'right', width, height),
+          }
+        : null,
+    moon:
+      projectedMoon !== null
+        ? {
+            position: moon.position,
+            x: projectedMoon.x,
+            y: projectedMoon.y,
+            radius: 15,
+            labelX: Math.min(width - 14, Math.max(14, projectedMoon.x + 18)),
+            labelY: Math.max(20, Math.min(height - 14, projectedMoon.y - 12)),
+            labelFontSize: 12,
+            visible:
+              projectedMoon.x >= -80 &&
+              projectedMoon.x <= width + 80 &&
+              projectedMoon.y >= -80 &&
+              projectedMoon.y <= height + 80,
+            phaseFraction: moon.phaseFraction,
+            phaseAngle: moon.phaseAngle,
+            phaseDegrees: moon.phaseDegrees,
+            waxing: moon.waxing,
+            brightLimbAngle: moon.brightLimbAngle,
           }
         : null,
     visibleFieldStars,

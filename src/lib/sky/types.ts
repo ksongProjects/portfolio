@@ -44,6 +44,14 @@ export type SkySnapshot = {
   allPositions: SkySnapshotEntry[]
   fieldStarPositions: PositionedCatalogStar[]
   referenceStarPositions: PositionedReferenceStar[]
+  moon: {
+    position: ConstellationPosition
+    phaseFraction: number
+    phaseAngle: number
+    phaseDegrees: number
+    waxing: boolean
+    brightLimbAngle: number
+  }
   current: {
     time: Date
     position: ConstellationPosition
@@ -98,6 +106,22 @@ export type VisibleReferenceStar = PositionedReferenceStar & {
   visible: boolean
 }
 
+export type VisibleMoon = {
+  position: ConstellationPosition
+  x: number
+  y: number
+  radius: number
+  labelX: number
+  labelY: number
+  labelFontSize: number
+  visible: boolean
+  phaseFraction: number
+  phaseAngle: number
+  phaseDegrees: number
+  waxing: boolean
+  brightLimbAngle: number
+}
+
 export type AltitudeGuide = {
   altitude: number
   major: boolean
@@ -121,6 +145,7 @@ export type HorizonGuide = {
 
 export type SkyScene = {
   horizon: HorizonGuide | null
+  moon: VisibleMoon | null
   visibleFieldStars: VisibleFieldStar[]
   visibleConstellations: VisibleConstellation[]
   visibleReferenceStars: VisibleReferenceStar[]

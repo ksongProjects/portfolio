@@ -67,6 +67,7 @@ export function drawSkyScene(
     drawSkyGuideOverlay(ctx, scene, surface.width, surface.height)
   }
 
+  drawMoon(ctx, scene.moon)
   drawSkyField(ctx, scene.visibleFieldStars, showFieldHalos)
   drawReferenceStars(ctx, scene.visibleReferenceStars, focus, showReferenceLabels)
   drawConstellations(ctx, scene.visibleConstellations, selectedSignKey, focus, constellationLabelMode)
@@ -195,6 +196,137 @@ function drawSkyField(
     ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2)
     ctx.fill()
   })
+
+  ctx.restore()
+}
+
+function drawMoon(
+  ctx: CanvasRenderingContext2D,
+  moon: SkyScene['moon'],
+): void {
+  if (!moon || !moon.visible) {
+    return
+  }
+
+  const isBelowHorizon = moon.position.altitude < 0
+  const radius = moon.radius
+  const phaseRadians = (moon.phaseDegrees * Math.PI) / 180
+  const terminatorRadiusX = Math.max(0.0001, Math.abs(radius * Math.cos(phaseRadians)))
+  const isNearNewMoon = moon.phaseFraction <= 0.01
+  const isNearFullMoon = moon.phaseFraction >= 0.99
+  const isCrescent = moon.phaseFraction < 0.5
+
+  ctx.save()
+  ctx.globalAlpha = isBelowHorizon ? 0.2 : 0.96
+
+  const glow = ctx.createRadialGradient(moon.x, moon.y, radius * 0.2, moon.x, moon.y, radius * 2.8)
+  glow.addColorStop(0, 'rgba(255, 248, 214, 0.22)')
+  glow.addColorStop(1, 'rgba(255, 248, 214, 0)')
+  ctx.fillStyle = glow
+  ctx.beginPath()
+  ctx.arc(moon.x, moon.y, radius * 2.8, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.save()
+  ctx.translate(moon.x, moon.y)
+  ctx.rotate(-moon.brightLimbAngle)
+
+  ctx.fillStyle = '#2c374e'
+  ctx.beginPath()
+  ctx.arc(0, 0, radius, 0, Math.PI * 2)
+  ctx.fill()
+
+  if (isNearNewMoon) {
+    // Leave the dark disc in place for a new moon.
+  } else if (isNearFullMoon) {
+    ctx.fillStyle = '#fff6d9'
+    ctx.beginPath()
+    ctx.arc(0, 0, radius, 0, Math.PI * 2)
+    ctx.fill()
+  } else if (isCrescent) {
+    ctx.beginPath()
+    if (moon.waxing) {
+      ctx.arc(0, 0, radius, -Math.PI / 2, Math.PI / 2, false)
+      ctx.ellipse(
+        0,
+        0,
+        terminatorRadiusX,
+        radius,
+        0,
+        Math.PI / 2,
+        -Math.PI / 2,
+        true,
+      )
+    } else {
+      ctx.arc(0, 0, radius, -Math.PI / 2, Math.PI / 2, true)
+      ctx.ellipse(
+        0,
+        0,
+        terminatorRadiusX,
+        radius,
+        0,
+        -Math.PI / 2,
+        Math.PI / 2,
+        true,
+      )
+    }
+    ctx.closePath()
+    ctx.fillStyle = '#fff6d9'
+    ctx.fill()
+  } else {
+    ctx.fillStyle = '#fff6d9'
+    ctx.beginPath()
+    ctx.arc(0, 0, radius, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.globalCompositeOperation = 'destination-out'
+    ctx.beginPath()
+    if (moon.waxing) {
+      ctx.arc(0, 0, radius, -Math.PI / 2, Math.PI / 2, true)
+      ctx.ellipse(
+        0,
+        0,
+        terminatorRadiusX,
+        radius,
+        0,
+        -Math.PI / 2,
+        Math.PI / 2,
+        true,
+      )
+    } else {
+      ctx.arc(0, 0, radius, -Math.PI / 2, Math.PI / 2, false)
+      ctx.ellipse(
+        0,
+        0,
+        terminatorRadiusX,
+        radius,
+        0,
+        Math.PI / 2,
+        -Math.PI / 2,
+        true,
+      )
+    }
+    ctx.closePath()
+    ctx.fill()
+    ctx.globalCompositeOperation = 'source-over'
+  }
+  ctx.restore()
+
+  ctx.globalAlpha = isBelowHorizon ? 0.3 : 0.85
+  ctx.strokeStyle = 'rgba(255, 248, 214, 0.75)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.arc(moon.x, moon.y, radius, 0, Math.PI * 2)
+  ctx.stroke()
+
+  if (!isBelowHorizon) {
+    ctx.globalAlpha = 0.76
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'
+    ctx.font = `${moon.labelFontSize}px ${anonymousProFontFamily}`
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'alphabetic'
+    ctx.fillText('Moon', moon.labelX, moon.labelY)
+  }
 
   ctx.restore()
 }

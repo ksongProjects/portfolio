@@ -1,4 +1,4 @@
-import { Body, Equator, Horizon, Observer } from 'astronomy-engine'
+import { Body, Equator, Horizon, Illumination, MoonPhase, Observer } from 'astronomy-engine'
 import type {
   AppLocation,
   ConstellationPosition,
@@ -7,6 +7,7 @@ import type {
   ZodiacSign,
 } from '@/lib/types'
 import type { SkySnapshot } from './types'
+import { shortestAngleDelta } from './utils'
 
 export function buildSkySnapshot(
   sign: ZodiacSign,
@@ -37,6 +38,7 @@ export function buildSkySnapshot(
     ...star,
     position: getCatalogStarPosition(star, observer, now),
   }))
+  const moon = getMoonData(observer, now)
   const currentPosition =
     allPositions.find((entry) => entry.sign.key === sign.key)?.position ??
     getConstellationPosition(sign, [], observer, now)
@@ -50,6 +52,7 @@ export function buildSkySnapshot(
     allPositions,
     fieldStarPositions,
     referenceStarPositions,
+    moon,
     current: {
       time: now,
       position: currentPosition,
@@ -101,6 +104,46 @@ function getSunPosition(observer: Observer, time: Date): ConstellationPosition {
     azimuth: horizontal.azimuth,
     altitude: horizontal.altitude,
   }
+}
+
+function getMoonData(observer: Observer, time: Date) {
+  const equatorial = Equator(Body.Moon, time, observer, true, true)
+  const horizontal = Horizon(time, observer, equatorial.ra, equatorial.dec, 'normal')
+  const illumination = Illumination(Body.Moon, time)
+  const phaseDegrees = MoonPhase(time)
+  const sunPosition = getSunPosition(observer, time)
+
+  return {
+    position: {
+      azimuth: horizontal.azimuth,
+      altitude: horizontal.altitude,
+    },
+    phaseFraction: illumination.phase_fraction,
+    phaseAngle: illumination.phase_angle,
+    phaseDegrees,
+    waxing: phaseDegrees <= 180,
+    brightLimbAngle: getBrightLimbAngle(
+      {
+        azimuth: horizontal.azimuth,
+        altitude: horizontal.altitude,
+      },
+      sunPosition,
+    ),
+  }
+}
+
+function getBrightLimbAngle(
+  moonPosition: ConstellationPosition,
+  sunPosition: ConstellationPosition,
+): number {
+  const azimuthDeltaRadians =
+    (shortestAngleDelta(sunPosition.azimuth, moonPosition.azimuth) * Math.PI) / 180
+  const averageAltitudeRadians =
+    (((moonPosition.altitude + sunPosition.altitude) / 2) * Math.PI) / 180
+  const x = Math.sin(azimuthDeltaRadians) * Math.cos(averageAltitudeRadians)
+  const y = (sunPosition.altitude - moonPosition.altitude) * (Math.PI / 180)
+
+  return Math.atan2(y, x)
 }
 
 function getCircularMeanDegrees(angles: number[]): number {

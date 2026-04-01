@@ -166,6 +166,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         formatClock(snapshotValue.now, snapshotValue.location.timezone),
         `view ${formatCompassLabel(viewCenter.azimuth)}`,
         `tilt ${formatAltitudeLabel(viewCenter.altitude)}`,
+        `moon ${getMoonPhaseLabel(snapshotValue.moon.phaseDegrees)} ${formatCompassLabel(snapshotValue.moon.position.azimuth)} ${formatAltitudeLabel(snapshotValue.moon.position.altitude)}`,
       ].join(' / ')
     })
 
@@ -198,6 +199,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         snapshotValue.allPositions,
         snapshotValue.fieldStarPositions,
         snapshotValue.referenceStarPositions,
+        snapshotValue.moon,
         viewCenter,
         surface.width,
         surface.height,
@@ -1109,4 +1111,36 @@ function formatStarMagnitude(value: number): string {
 
 function getVisibilityLabel(altitude: number): string {
   return altitude > 0 ? 'Visible now' : 'Below horizon'
+}
+
+function getMoonPhaseLabel(phaseDegrees: number): string {
+  if (phaseDegrees < 22.5 || phaseDegrees >= 337.5) {
+    return 'new'
+  }
+
+  if (phaseDegrees < 67.5) {
+    return 'waxing crescent'
+  }
+
+  if (phaseDegrees < 112.5) {
+    return 'first quarter'
+  }
+
+  if (phaseDegrees < 157.5) {
+    return 'waxing gibbous'
+  }
+
+  if (phaseDegrees < 202.5) {
+    return 'full'
+  }
+
+  if (phaseDegrees < 247.5) {
+    return 'waning gibbous'
+  }
+
+  if (phaseDegrees < 292.5) {
+    return 'last quarter'
+  }
+
+  return 'waning crescent'
 }
