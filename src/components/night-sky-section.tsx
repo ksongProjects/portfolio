@@ -791,11 +791,6 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
               </div>
 
               <div className="sky-canvas-shell">
-                <div
-                  className={`sky-canvas-visibility sky-canvas-visibility--${details.visibilityBadge.tone}`}
-                >
-                  {details.visibilityBadge.label}
-                </div>
                 <canvas
                   ref={canvasRef}
                   className="sky-canvas"

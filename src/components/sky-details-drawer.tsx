@@ -41,13 +41,29 @@ export function SkyDetailsDrawer({ details, onSelectFocus }: SkyDetailsDrawerPro
         </div>
       </div>
       <p className="sky-details__credit">
-        Constellation line data from{' '}
+        Sources:{' '}
         <a
           href="https://github.com/Stellarium/stellarium-skycultures"
           rel="noreferrer"
           target="_blank"
         >
           Stellarium skycultures
+        </a>
+        ,{' '}
+        <a
+          href="https://tapvizier.cds.unistra.fr/TAPVizieR/tap/"
+          rel="noreferrer"
+          target="_blank"
+        >
+          VizieR Hipparcos
+        </a>
+        ,{' '}
+        <a href="https://cds.unistra.fr/cgi-bin/Sesame" rel="noreferrer" target="_blank">
+          CDS Sesame
+        </a>
+        , and{' '}
+        <a href="https://www.wikipedia.org/" rel="noreferrer" target="_blank">
+          Wikipedia
         </a>
         .
       </p>
