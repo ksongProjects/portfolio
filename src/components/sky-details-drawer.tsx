@@ -12,13 +12,16 @@ export function SkyDetailsDrawer({ details, onSelectFocus }: SkyDetailsDrawerPro
     <div className="sky-details" id="sky-details" aria-live="polite">
       <div className="sky-details-stack">
         <figure className="sky-portrait">
-          <Image
-            className={`sky-portrait__image sky-portrait__image--${details.imageFit ?? 'cover'}`}
-            src={details.imageSrc}
-            alt={details.imageAlt}
-            width={500}
-            height={300}
-          />
+          <div className="sky-portrait__media">
+            <Image
+              className={`sky-portrait__image sky-portrait__image--${details.imageFit ?? 'cover'}`}
+              src={details.imageSrc}
+              alt={details.imageAlt}
+              fill
+              sizes="(max-width: 780px) calc(100vw - 4rem), 22rem"
+              unoptimized={details.imageSrc.startsWith('data:')}
+            />
+          </div>
           <figcaption className="sky-portrait__caption">
             <p className="sky-portrait__eyebrow">{details.eyebrow}</p>
             <h3 className="sky-portrait__title">{details.title}</h3>

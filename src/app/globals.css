@@ -453,7 +453,6 @@ code {
 }
 
 .project-group__copy {
-  max-width: 42ch;
   font-size: 0.8rem;
   color: rgba(220, 230, 255, 0.6);
 }
@@ -795,11 +794,17 @@ code {
   background: rgba(255, 255, 255, 0.025);
 }
 
-.sky-portrait__image {
+.sky-portrait__media {
+  position: relative;
   width: 100%;
   aspect-ratio: 12 / 7;
+  overflow: hidden;
   border: 1px solid rgba(151, 178, 242, 0.12);
   background: rgba(255, 255, 255, 0.04);
+}
+
+.sky-portrait__image {
+  object-position: center;
 }
 
 .sky-portrait__image--cover {
