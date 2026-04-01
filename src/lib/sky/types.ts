@@ -70,8 +70,7 @@ export type VisibleConstellationPoint = PositionedCatalogStar & {
 export type VisibleConstellationEdge = {
   startIndex: number
   endIndex: number
-  start: ScreenPoint
-  end: ScreenPoint
+  points: ScreenPoint[]
 }
 
 export type VisibleConstellation = {
@@ -101,21 +100,27 @@ export type VisibleReferenceStar = PositionedReferenceStar & {
 
 export type AltitudeGuide = {
   altitude: number
-  y: number
   major: boolean
   label: string
+  paths: ScreenPoint[][]
+  labelPoint: ScreenPoint | null
 }
 
 export type AzimuthGuide = {
   azimuth: number
-  x: number
   major: boolean
   label: string
+  paths: ScreenPoint[][]
+  labelPoint: ScreenPoint | null
+}
+
+export type HorizonGuide = {
+  paths: ScreenPoint[][]
+  labelPoint: ScreenPoint | null
 }
 
 export type SkyScene = {
-  horizonY: number
-  horizonLine: boolean
+  horizon: HorizonGuide | null
   visibleFieldStars: VisibleFieldStar[]
   visibleConstellations: VisibleConstellation[]
   visibleReferenceStars: VisibleReferenceStar[]

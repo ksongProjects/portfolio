@@ -1,5 +1,6 @@
 import type { SkyFocus } from '@/lib/types'
 import type { SkyDetailsContent } from '@/lib/sky/details'
+import Image from 'next/image'
 
 type SkyDetailsDrawerProps = {
   details: SkyDetailsContent
@@ -11,15 +12,22 @@ export function SkyDetailsDrawer({ details, onSelectFocus }: SkyDetailsDrawerPro
     <div className="sky-details" id="sky-details" aria-live="polite">
       <div className="sky-details-stack">
         <figure className="sky-portrait">
-          <img
+          <Image
             className={`sky-portrait__image sky-portrait__image--${details.imageFit ?? 'cover'}`}
             src={details.imageSrc}
             alt={details.imageAlt}
+            width={500}
+            height={300}
           />
           <figcaption className="sky-portrait__caption">
             <p className="sky-portrait__eyebrow">{details.eyebrow}</p>
             <h3 className="sky-portrait__title">{details.title}</h3>
             <p className="sky-portrait__subtitle">{details.subtitle}</p>
+            <p
+              className={`sky-portrait__visibility-badge sky-portrait__visibility-badge--${details.visibilityBadge.tone}`}
+            >
+              {details.visibilityBadge.label}
+            </p>
             <p className="sky-portrait__fact">{details.fact}</p>
             {details.actions?.length ? (
               <div className="sky-portrait__actions">

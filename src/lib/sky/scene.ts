@@ -4,19 +4,19 @@ import {
   SKY_GRID_MAJOR_INCREMENT,
   SKY_GRID_VISIBILITY_MARGIN,
 } from './constants'
-import type { ScreenPoint, SkyScene, SkySnapshot, ViewCenter, VisibleConstellationEdge } from './types'
+import type { ScreenPoint, SkyScene, SkySnapshot, ViewCenter } from './types'
 import {
-  clipSegmentToViewport,
   distanceToSegment,
   estimateMonoTextWidth,
   formatCompassLabel,
   getConstellationStarRadius,
   getSkyFieldVisuals,
+  interpolateSkyPositions,
   isPointInRect,
   isPointWithinViewport,
-  projectAltitudeToY,
-  projectAzimuthToX,
-  projectSkyPosition,
+  normalizeAngle,
+  projectSkyPositionSafe,
+  projectSkyPositionToViewportEdge,
 } from './utils'
 
 export function buildSkyViewportScene(
@@ -27,22 +27,22 @@ export function buildSkyViewportScene(
   width: number,
   height: number,
 ): SkyScene {
-  const horizonY = projectAltitudeToY(0, viewCenter.altitude, height)
   const viewportMargin = 24
   const visibleFieldStars = fieldStarPositions
     .map((star) => {
-      const projected = projectSkyPosition(star.position, viewCenter, width, height)
+      const projected = projectSkyPositionSafe(star.position, viewCenter, width, height)
       const visuals = getSkyFieldVisuals(star.magnitude)
 
       return {
         ...star,
-        x: projected.x,
-        y: projected.y,
+        x: projected?.x ?? 0,
+        y: projected?.y ?? 0,
         radius: visuals.radius,
         opacity: visuals.opacity,
         haloRadius: visuals.haloRadius,
         color: '#f7fbff',
         visible:
+          projected !== null &&
           projected.x >= -40 &&
           projected.x <= width + 40 &&
           projected.y >= -40 &&
@@ -54,50 +54,45 @@ export function buildSkyViewportScene(
 
   const visibleConstellations = positions
     .map(({ sign, position, stars }) => {
-      const center = projectSkyPosition(position, viewCenter, width, height)
+      const center = projectSkyPositionSafe(position, viewCenter, width, height)
       const projected = stars.map((star) => {
-        const projectedStar = projectSkyPosition(star.position, viewCenter, width, height)
+        const projectedStar = projectSkyPositionSafe(star.position, viewCenter, width, height)
 
         return {
           ...star,
-          x: projectedStar.x,
-          y: projectedStar.y,
+          x: projectedStar?.x ?? 0,
+          y: projectedStar?.y ?? 0,
           radius: getConstellationStarRadius(star.magnitude),
-          visible: isPointWithinViewport(
-            projectedStar.x,
-            projectedStar.y,
-            width,
-            height,
-            viewportMargin,
-          ),
+          visible:
+            projectedStar !== null &&
+            isPointWithinViewport(projectedStar.x, projectedStar.y, width, height, viewportMargin),
         }
       })
       const visibleEdges = sign.edges
-        .map(([startIndex, endIndex]) => {
+        .flatMap(([startIndex, endIndex]) => {
           const first = projected[startIndex]
           const second = projected[endIndex]
+          const firstPosition = stars[startIndex]?.position
+          const secondPosition = stars[endIndex]?.position
 
-          if (!first || !second || (!first.visible && !second.visible)) {
-            return null
+          if (!first || !second || !firstPosition || !secondPosition) {
+            return []
           }
 
-          const clipped = clipSegmentToViewport(first, second, width, height, viewportMargin)
-
-          if (!clipped) {
-            return null
-          }
-
-          return {
+          return projectSkyPolyline(
+            interpolateSkyPositions(firstPosition, secondPosition, 12),
+            viewCenter,
+            width,
+            height,
+          ).map((points) => ({
             startIndex,
             endIndex,
-            start: clipped.start,
-            end: clipped.end,
-          }
+            points,
+          }))
         })
-        .filter((edge): edge is VisibleConstellationEdge => edge !== null)
       const boundsSource = [
         ...projected.filter((point) => point.visible),
-        ...visibleEdges.flatMap((edge) => [edge.start, edge.end]),
+        ...visibleEdges.flatMap((edge) => edge.points),
       ]
       const bounds = boundsSource.reduce(
         (range, point) => ({
@@ -107,10 +102,10 @@ export function buildSkyViewportScene(
           maxY: Math.max(range.maxY, point.y),
         }),
         {
-          minX: center.x,
-          maxX: center.x,
-          minY: center.y,
-          maxY: center.y,
+          minX: center?.x ?? width / 2,
+          maxX: center?.x ?? width / 2,
+          minY: center?.y ?? height / 2,
+          maxY: center?.y ?? height / 2,
         },
       )
       const visible = projected.some((point) => point.visible) || visibleEdges.length > 0
@@ -124,7 +119,7 @@ export function buildSkyViewportScene(
             x: point.x,
             y: point.y,
           })),
-        visibleEdges.flatMap((edge) => [edge.start, edge.end]),
+        visibleEdges.flatMap((edge) => edge.points),
         labelWidth,
         labelFontSize,
         width,
@@ -134,7 +129,7 @@ export function buildSkyViewportScene(
       return {
         sign,
         position,
-        center,
+        center: center ?? labelPlacement,
         projected,
         visibleEdges,
         bounds,
@@ -150,17 +145,18 @@ export function buildSkyViewportScene(
 
   const visibleReferenceStars = referencePositions
     .map((star) => {
-      const projected = projectSkyPosition(star.position, viewCenter, width, height)
+      const projected = projectSkyPositionSafe(star.position, viewCenter, width, height)
 
       return {
         ...star,
-        x: projected.x,
-        y: projected.y,
-        labelX: Math.min(width - 12, Math.max(12, projected.x + 10)),
-        labelY: Math.max(18, Math.min(height - 12, projected.y - 8)),
+        x: projected?.x ?? 0,
+        y: projected?.y ?? 0,
+        labelX: Math.min(width - 12, Math.max(12, (projected?.x ?? 0) + 10)),
+        labelY: Math.max(18, Math.min(height - 12, (projected?.y ?? 0) - 8)),
         labelFontSize: 11,
         labelWidth: estimateMonoTextWidth(star.name, 11),
         visible:
+          projected !== null &&
           projected.x >= -80 &&
           projected.x <= width + 80 &&
           projected.y >= -50 &&
@@ -176,29 +172,70 @@ export function buildSkyViewportScene(
     (_, index) => -90 + index * SKY_GRID_INCREMENT,
   )
     .filter((altitude) => altitude !== 0)
-    .map((altitude) => ({
-      altitude,
-      y: projectAltitudeToY(altitude, viewCenter.altitude, height),
-      major: Math.abs(altitude) % SKY_GRID_MAJOR_INCREMENT === 0,
-      label: `${altitude > 0 ? '+' : ''}${altitude}\u00B0`,
-    }))
-    .filter(({ y }) => y >= -SKY_GRID_VISIBILITY_MARGIN && y <= height + SKY_GRID_VISIBILITY_MARGIN)
+    .map((altitude) => {
+      const paths = projectSkyPolyline(
+        sampleAltitudeGuide(altitude, viewCenter.azimuth),
+        viewCenter,
+        width,
+        height,
+      )
+
+      return {
+        altitude,
+        major: Math.abs(altitude) % SKY_GRID_MAJOR_INCREMENT === 0,
+        label: `${altitude > 0 ? '+' : ''}${altitude}\u00B0`,
+        paths,
+        labelPoint: getGuideLabelPoint(paths, 'left', width, height),
+      }
+    })
+    .filter(({ paths }) => paths.length > 0)
 
   const azimuthGuides = Array.from(
     { length: Math.floor(360 / SKY_GRID_INCREMENT) },
     (_, index) => index * SKY_GRID_INCREMENT,
   )
-    .map((azimuth) => ({
-      azimuth,
-      x: projectAzimuthToX(azimuth, viewCenter.azimuth, width),
-      major: azimuth % SKY_GRID_MAJOR_INCREMENT === 0,
-      label: `${formatCompassLabel(azimuth)} ${azimuth}\u00B0`,
-    }))
-    .filter(({ x }) => x >= -SKY_GRID_VISIBILITY_MARGIN && x <= width + SKY_GRID_VISIBILITY_MARGIN)
+    .map((azimuth) => {
+      const paths = projectSkyPolyline(
+        sampleAzimuthGuide(azimuth),
+        viewCenter,
+        width,
+        height,
+      )
+
+      return {
+        azimuth,
+        major: azimuth % SKY_GRID_MAJOR_INCREMENT === 0,
+        label: `${formatCompassLabel(azimuth)} ${azimuth}\u00B0`,
+        paths,
+        labelPoint:
+          azimuth % SKY_GRID_MAJOR_INCREMENT === 0
+            ? projectSkyPositionToViewportEdge(
+                { azimuth, altitude: 0 },
+                viewCenter,
+                width,
+                height,
+                18,
+              )
+            : null,
+      }
+    })
+    .filter(({ paths }) => paths.length > 0)
+
+  const horizonPaths = projectSkyPolyline(
+    sampleAltitudeGuide(0, viewCenter.azimuth),
+    viewCenter,
+    width,
+    height,
+  )
 
   return {
-    horizonY,
-    horizonLine: horizonY >= 0 && horizonY <= height,
+    horizon:
+      horizonPaths.length > 0
+        ? {
+            paths: horizonPaths,
+            labelPoint: getGuideLabelPoint(horizonPaths, 'right', width, height),
+          }
+        : null,
     visibleFieldStars,
     visibleConstellations,
     visibleReferenceStars,
@@ -250,8 +287,10 @@ export function findSkyHitTarget(point: ScreenPoint, scene: SkyScene): SkyFocus 
       score = Math.min(score, Math.hypot(point.x - pointEntry.x, point.y - pointEntry.y))
     })
 
-    entry.visibleEdges.forEach(({ start, end }) => {
-      score = Math.min(score, distanceToSegment(point, start, end))
+    entry.visibleEdges.forEach(({ points }) => {
+      for (let index = 1; index < points.length; index += 1) {
+        score = Math.min(score, distanceToSegment(point, points[index - 1], points[index]))
+      }
     })
 
     if (
@@ -276,6 +315,95 @@ export function findSkyHitTarget(point: ScreenPoint, scene: SkyScene): SkyFocus 
   })
 
   return bestTarget
+}
+
+function projectSkyPolyline(
+  samples: Array<{ azimuth: number; altitude: number }>,
+  viewCenter: ViewCenter,
+  width: number,
+  height: number,
+): ScreenPoint[][] {
+  const paths: ScreenPoint[][] = []
+  let current: ScreenPoint[] = []
+  let previous: ScreenPoint | null = null
+  const jumpThreshold = Math.max(width, height) * 1.25
+
+  samples.forEach((sample) => {
+    const projected = projectSkyPositionSafe(sample, viewCenter, width, height)
+
+    if (!projected) {
+      if (current.length > 1) {
+        paths.push(current)
+      }
+
+      current = []
+      previous = null
+      return
+    }
+
+    if (
+      previous &&
+      Math.hypot(projected.x - previous.x, projected.y - previous.y) > jumpThreshold
+    ) {
+      if (current.length > 1) {
+        paths.push(current)
+      }
+
+      current = [projected]
+      previous = projected
+      return
+    }
+
+    current.push(projected)
+    previous = projected
+  })
+
+  if (current.length > 1) {
+    paths.push(current)
+  }
+
+  return paths.filter((path) =>
+    path.some((point) => isPointWithinViewport(point.x, point.y, width, height, SKY_GRID_VISIBILITY_MARGIN)),
+  )
+}
+
+function sampleAltitudeGuide(altitude: number, centerAzimuth: number) {
+  return Array.from({ length: 181 }, (_, index) => ({
+    azimuth: normalizeAngle(centerAzimuth - 180 + index * 2),
+    altitude,
+  }))
+}
+
+function sampleAzimuthGuide(azimuth: number) {
+  return Array.from({ length: 181 }, (_, index) => ({
+    azimuth,
+    altitude: -90 + index,
+  }))
+}
+
+function getGuideLabelPoint(
+  paths: ScreenPoint[][],
+  preference: 'left' | 'bottom' | 'right',
+  width: number,
+  height: number,
+): ScreenPoint | null {
+  const points = paths
+    .flat()
+    .filter((point) => isPointWithinViewport(point.x, point.y, width, height, 0))
+
+  if (points.length === 0) {
+    return null
+  }
+
+  if (preference === 'left') {
+    return points.reduce((best, point) => (point.x < best.x ? point : best))
+  }
+
+  if (preference === 'right') {
+    return points.reduce((best, point) => (point.x > best.x ? point : best))
+  }
+
+  return points.reduce((best, point) => (point.y > best.y ? point : best))
 }
 
 function getConstellationLabelPlacement(

@@ -22,7 +22,7 @@ export const PortfolioSection = forwardRef<HTMLElement, PortfolioSectionProps>(
 
           <div className="monograph-layout">
             <div className="monograph-intro">
-              <h3>{profile.name}</h3>
+              <h2>{profile.name}</h2>
               <p className="monograph-role">{profile.role}</p>
               <p>{profile.intro}</p>
               <div className="monograph-socials">

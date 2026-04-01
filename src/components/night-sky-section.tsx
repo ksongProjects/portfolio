@@ -4,7 +4,6 @@ import { forwardRef, useEffect, useEffectEvent, useRef, useState } from 'react'
 import {
   DEFAULT_SIGN_KEY,
   FALLBACK_LOCATION,
-  HORIZONTAL_VIEW_ANGLE,
   SKY_STORAGE_KEYS,
   VERTICAL_VIEW_ANGLE,
 } from '@/lib/sky/constants'
@@ -18,8 +17,10 @@ import {
   formatAltitudeLabel,
   formatClock,
   formatCompassLabel,
+  getHorizontalViewAngle,
   normalizeAngle,
   readStorage,
+  shortestAngleDelta,
   writeStorage,
 } from '@/lib/sky/utils'
 import type { AppLocation, SkyDataset, SkyFocus } from '@/lib/types'
@@ -49,6 +50,8 @@ type ViewCenter = {
   altitude: number
 }
 
+type ViewMoveMode = 'none' | 'jump' | 'animate'
+
 export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
   function NightSkySection({ dataset, initialNowIso, isActive }, ref) {
     const initialSign = findConstellation(dataset, DEFAULT_SIGN_KEY)
@@ -70,6 +73,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       azimuth: normalizeAngle(initialSnapshot.current.position.azimuth),
       altitude: clampViewAltitude(initialSnapshot.current.position.altitude),
     })
+    const viewAnimationFrameRef = useRef<number | null>(null)
     const renderQueuedRef = useRef(false)
     const dragStateRef = useRef<SkyDragState>(null)
     const recenterNextSnapshotRef = useRef(false)
@@ -155,22 +159,162 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       })
     })
 
-    const recenterViewToSign = useEffectEvent((signKey: string, sourceSnapshot?: SkySnapshot) => {
-      const snapshotValue = sourceSnapshot ?? snapshotRef.current
-      const signEntry = snapshotValue?.allPositions.find((entry) => entry.sign.key === signKey)
-
-      if (!snapshotValue || !signEntry) {
-        return
+    const cancelViewAnimation = useEffectEvent(() => {
+      if (viewAnimationFrameRef.current !== null) {
+        window.cancelAnimationFrame(viewAnimationFrameRef.current)
+        viewAnimationFrameRef.current = null
       }
-
-      viewCenterRef.current = {
-        azimuth: normalizeAngle(signEntry.position.azimuth),
-        altitude: clampViewAltitude(signEntry.position.altitude),
-      }
-
-      updateStatusLine(snapshotValue)
-      scheduleRender()
     })
+
+    const moveViewToCenter = useEffectEvent(
+      (nextCenter: ViewCenter, moveMode: Exclude<ViewMoveMode, 'none'>, sourceSnapshot?: SkySnapshot) => {
+        const targetCenter = {
+          azimuth: normalizeAngle(nextCenter.azimuth),
+          altitude: clampViewAltitude(nextCenter.altitude),
+        }
+
+        cancelViewAnimation()
+
+        if (
+          moveMode === 'jump' ||
+          typeof window === 'undefined' ||
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ) {
+          viewCenterRef.current = targetCenter
+          updateStatusLine(sourceSnapshot)
+          scheduleRender()
+          return
+        }
+
+        const startCenter = viewCenterRef.current
+        const azimuthDelta = shortestAngleDelta(targetCenter.azimuth, startCenter.azimuth)
+        const altitudeDelta = targetCenter.altitude - startCenter.altitude
+        const travel = Math.hypot(azimuthDelta, altitudeDelta)
+
+        if (travel < 0.3) {
+          viewCenterRef.current = targetCenter
+          updateStatusLine(sourceSnapshot)
+          scheduleRender()
+          return
+        }
+
+        const duration = Math.min(900, Math.max(420, 320 + travel * 4.2))
+        const startedAt = window.performance.now()
+        const easeInOutCubic = (value: number) =>
+          value < 0.5 ? 4 * value * value * value : 1 - Math.pow(-2 * value + 2, 3) / 2
+
+        const step = (timestamp: number) => {
+          const progress = Math.min(1, (timestamp - startedAt) / duration)
+          const eased = easeInOutCubic(progress)
+
+          viewCenterRef.current = {
+            azimuth: normalizeAngle(startCenter.azimuth + azimuthDelta * eased),
+            altitude: clampViewAltitude(startCenter.altitude + altitudeDelta * eased),
+          }
+
+          updateStatusLine(sourceSnapshot)
+          drawCanvas()
+
+          if (progress < 1) {
+            viewAnimationFrameRef.current = window.requestAnimationFrame(step)
+            return
+          }
+
+          viewAnimationFrameRef.current = null
+        }
+
+        viewAnimationFrameRef.current = window.requestAnimationFrame(step)
+      },
+    )
+
+    const moveViewToSign = useEffectEvent(
+      (
+        signKey: string,
+        moveMode: Exclude<ViewMoveMode, 'none'>,
+        sourceSnapshot?: SkySnapshot,
+      ) => {
+        const snapshotValue = sourceSnapshot ?? snapshotRef.current
+        const signEntry = snapshotValue?.allPositions.find((entry) => entry.sign.key === signKey)
+
+        if (!snapshotValue || !signEntry) {
+          return
+        }
+
+        moveViewToCenter(
+          {
+            azimuth: signEntry.position.azimuth,
+            altitude: signEntry.position.altitude,
+          },
+          moveMode,
+          snapshotValue,
+        )
+      },
+    )
+
+    const moveViewToReferenceStar = useEffectEvent(
+      (
+        starName: string,
+        moveMode: Exclude<ViewMoveMode, 'none'>,
+        sourceSnapshot?: SkySnapshot,
+      ) => {
+        const snapshotValue = sourceSnapshot ?? snapshotRef.current
+        const star = snapshotValue?.referenceStarPositions.find((entry) => entry.name === starName)
+
+        if (!snapshotValue || !star) {
+          return
+        }
+
+        moveViewToCenter(
+          {
+            azimuth: star.position.azimuth,
+            altitude: star.position.altitude,
+          },
+          moveMode,
+          snapshotValue,
+        )
+      },
+    )
+
+    const selectSign = useEffectEvent((signKey: string, moveMode: ViewMoveMode = 'none') => {
+      if (moveMode !== 'none') {
+        moveViewToSign(signKey, moveMode)
+      }
+
+      setSelectedSignKey((current) => (current === signKey ? current : signKey))
+      setSkyFocus({
+        kind: 'sign',
+        signKey,
+      })
+    })
+
+    const selectReferenceStar = useEffectEvent(
+      (starName: string, moveMode: ViewMoveMode = 'none') => {
+        const relatedStar = snapshotRef.current.referenceStarPositions.find(
+          (entry) => entry.name === starName,
+        )
+
+        if (!relatedStar) {
+          return
+        }
+
+        if (moveMode !== 'none') {
+          moveViewToReferenceStar(starName, moveMode)
+        }
+
+        const relatedSignKey = relatedStar.zodiacSignKey
+
+        if (relatedSignKey) {
+          setSelectedSignKey((current) =>
+            current === relatedSignKey ? current : relatedSignKey,
+          )
+        }
+
+        setSkyFocus({
+          kind: 'star',
+          starName,
+        })
+      },
+    )
 
     const syncSnapshot = useEffectEvent((recenterView: boolean) => {
       const selectedSign = findConstellation(dataset, selectedSignKey)
@@ -187,7 +331,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       setSnapshot(nextSnapshot)
 
       if (recenterView || !viewCenterRef.current) {
-        recenterViewToSign(selectedSign.key, nextSnapshot)
+        moveViewToSign(selectedSign.key, 'jump', nextSnapshot)
         return
       }
 
@@ -231,8 +375,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
 
       if (target.kind === 'sign') {
         recenterNextSnapshotRef.current = false
-        setSelectedSignKey(target.signKey)
-        setSkyFocus(target)
+        selectSign(target.signKey)
         return
       }
 
@@ -242,12 +385,11 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
 
       if (star?.zodiacSignKey && star.zodiacSignKey !== selectedSignKey) {
         recenterNextSnapshotRef.current = false
-        setSelectedSignKey(star.zodiacSignKey)
-        setSkyFocus(target)
+        selectReferenceStar(target.starName)
         return
       }
 
-      setSkyFocus(target)
+      selectReferenceStar(target.starName)
     })
 
     useEffect(() => {
@@ -293,6 +435,14 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       updateStatusLine()
       scheduleRender()
     }, [selectedSignKey, showSkyGuide, skyFocus, snapshot])
+
+    useEffect(() => {
+      return () => {
+        if (viewAnimationFrameRef.current !== null) {
+          window.cancelAnimationFrame(viewAnimationFrameRef.current)
+        }
+      }
+    }, [])
 
     useEffect(() => {
       const canvas = canvasRef.current
@@ -341,6 +491,8 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
           return
         }
 
+        cancelViewAnimation()
+
         const bounds = canvas.getBoundingClientRect()
 
         dragStateRef.current = {
@@ -382,7 +534,8 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
 
         viewCenterRef.current = {
           azimuth: normalizeAngle(
-            dragState.startAzimuth - (deltaX / dragState.width) * HORIZONTAL_VIEW_ANGLE,
+            dragState.startAzimuth -
+              (deltaX / dragState.width) * getHorizontalViewAngle(dragState.width, dragState.height),
           ),
           altitude: clampViewAltitude(
             dragState.startAltitude + (deltaY / dragState.height) * VERTICAL_VIEW_ANGLE,
@@ -484,27 +637,20 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
 
     const handleDetailsFocusSelect = useEffectEvent((nextFocus: SkyFocus) => {
       if (nextFocus.kind === 'sign') {
-        setSelectedSignKey((current) => (current === nextFocus.signKey ? current : nextFocus.signKey))
-        setSkyFocus(nextFocus)
+        selectSign(nextFocus.signKey, 'animate')
         return
       }
 
-      const relatedStar = snapshotRef.current.referenceStarPositions.find(
-        (entry) => entry.name === nextFocus.starName,
-      )
-      const relatedSignKey = relatedStar?.zodiacSignKey
-
-      if (relatedSignKey) {
-        setSelectedSignKey((current) =>
-          current === relatedSignKey ? current : relatedSignKey,
-        )
-      }
-
-      setSkyFocus(nextFocus)
+      selectReferenceStar(nextFocus.starName, 'animate')
     })
 
     const details = getSkyDetailsContent(skyFocus, snapshot, selectedSignKey)
     const selectedSign = findConstellation(dataset, selectedSignKey)
+    const brightestVisibleStars = getBrightestVisibleStars(snapshot, skyFocus)
+    const popularVisibleStars = getPopularVisibleStars(snapshot, skyFocus)
+    const signPositionByKey = new Map(
+      snapshot.allPositions.map((entry) => [entry.sign.key, entry.position]),
+    )
 
     return (
       <section className="stars-demo" id="stars" ref={ref}>
@@ -535,12 +681,19 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                 </div>
               </div>
 
-              <canvas
-                ref={canvasRef}
-                className="sky-canvas"
-                id="sky-canvas"
-                aria-label={`${selectedSign.name} constellation preview in night mode. Drag to pan and click visible stars or constellations for details.`}
-              />
+              <div className="sky-canvas-shell">
+                <div
+                  className={`sky-canvas-visibility sky-canvas-visibility--${details.visibilityBadge.tone}`}
+                >
+                  {details.visibilityBadge.label}
+                </div>
+                <canvas
+                  ref={canvasRef}
+                  className="sky-canvas"
+                  id="sky-canvas"
+                  aria-label={`${selectedSign.name} constellation preview in night mode. Drag to pan and click visible stars or constellations for details.`}
+                />
+              </div>
             </div>
           </div>
 
@@ -579,26 +732,24 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                   <div className="zodiac-list" id="zodiac-list">
                     {dataset.zodiacSignsByYear.map((sign) => {
                       const isSelected = sign.key === selectedSignKey
+                      const altitude = signPositionByKey.get(sign.key)?.altitude ?? Number.NEGATIVE_INFINITY
+                      const visibilityLabel = getVisibilityLabel(altitude)
 
                       return (
                         <button
                           type="button"
                           key={sign.key}
                           data-sign={sign.key}
-                          className={isSelected ? 'is-active' : undefined}
+                          className={`${isSelected ? 'is-active ' : ''}${altitude <= 0 ? 'is-below-horizon' : ''}`.trim()}
                           aria-pressed={isSelected}
                           onClick={() => {
-                            recenterNextSnapshotRef.current = true
-                            recenterViewToSign(sign.key)
-                            setSelectedSignKey(sign.key)
-                            setSkyFocus({
-                              kind: 'sign',
-                              signKey: sign.key,
-                            })
+                            recenterNextSnapshotRef.current = false
+                            selectSign(sign.key, 'animate')
                           }}
                         >
                           <strong>{sign.name}</strong>
                           <span>{sign.railSubtitle ?? sign.dates}</span>
+                          <small>{visibilityLabel}</small>
                         </button>
                       )
                     })}
@@ -612,29 +763,90 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                       <div className="zodiac-list zodiac-list--popular">
                         {dataset.popularConstellations.map((sign) => {
                           const isSelected = sign.key === selectedSignKey
+                          const altitude =
+                            signPositionByKey.get(sign.key)?.altitude ?? Number.NEGATIVE_INFINITY
+                          const visibilityLabel = getVisibilityLabel(altitude)
 
                           return (
                             <button
                               type="button"
                               key={sign.key}
                               data-sign={sign.key}
-                              className={isSelected ? 'is-active' : undefined}
+                              className={`${isSelected ? 'is-active ' : ''}${altitude <= 0 ? 'is-below-horizon' : ''}`.trim()}
                               aria-pressed={isSelected}
                               onClick={() => {
-                                recenterNextSnapshotRef.current = true
-                                recenterViewToSign(sign.key)
-                                setSelectedSignKey(sign.key)
-                                setSkyFocus({
-                                  kind: 'sign',
-                                  signKey: sign.key,
-                                })
+                                recenterNextSnapshotRef.current = false
+                                selectSign(sign.key, 'animate')
                               }}
                             >
                               <strong>{sign.name}</strong>
                               <span>{sign.railSubtitle ?? sign.dates}</span>
+                              <small>{visibilityLabel}</small>
                             </button>
                           )
                         })}
+                      </div>
+                    </>
+                  ) : null}
+
+                  {brightestVisibleStars.length > 0 ? (
+                    <>
+                      <p className="zodiac-rail__label zodiac-rail__label--section">
+                        Brightest stars above horizon
+                      </p>
+                      <div className="sky-object-list" aria-label="Brightest stars above horizon">
+                        {brightestVisibleStars.map((star) => {
+                          const content = (
+                            <>
+                              <strong>{star.name}</strong>
+                              <span>{star.subtitle}</span>
+                              <small>{star.meta}</small>
+                            </>
+                          )
+
+                          return star.focus ? (
+                            <button
+                              type="button"
+                              key={star.key}
+                              className={`sky-object-row${star.isActive ? ' is-active' : ''}`}
+                              aria-pressed={star.isActive}
+                              onClick={() => {
+                                selectReferenceStar(star.focus!.starName, 'animate')
+                              }}
+                            >
+                              {content}
+                            </button>
+                          ) : (
+                            <div className="sky-object-row sky-object-row--static" key={star.key}>
+                              {content}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </>
+                  ) : null}
+
+                  {popularVisibleStars.length > 0 ? (
+                    <>
+                      <p className="zodiac-rail__label zodiac-rail__label--section">
+                        Popular stars above horizon
+                      </p>
+                      <div className="sky-object-list" aria-label="Popular stars above horizon">
+                        {popularVisibleStars.map((star) => (
+                          <button
+                            type="button"
+                            key={star.key}
+                            className={`sky-object-row${star.isActive ? ' is-active' : ''}`}
+                            aria-pressed={star.isActive}
+                            onClick={() => {
+                              selectReferenceStar(star.focus.starName, 'animate')
+                            }}
+                          >
+                            <strong>{star.name}</strong>
+                            <span>{star.subtitle}</span>
+                            <small>{star.meta}</small>
+                          </button>
+                        ))}
                       </div>
                     </>
                   ) : null}
@@ -655,4 +867,115 @@ function findConstellation(dataset: SkyDataset, signKey: string) {
     dataset.allConstellations[0] ??
     dataset.zodiacSigns[0]
   )
+}
+
+type VisibleStarRailItem = {
+  key: string
+  name: string
+  subtitle: string
+  meta: string
+  isActive: boolean
+}
+
+type VisibleBrightStarRailItem = VisibleStarRailItem & {
+  focus: { kind: 'star'; starName: string } | null
+}
+
+type VisiblePopularStarRailItem = VisibleStarRailItem & {
+  focus: { kind: 'star'; starName: string }
+}
+
+function getBrightestVisibleStars(
+  snapshot: SkySnapshot,
+  currentFocus: SkyFocus,
+): VisibleBrightStarRailItem[] {
+  const referenceStarsByName = new Map(
+    snapshot.referenceStarPositions.map((star) => [normalizeStarName(star.name), star]),
+  )
+  const signNameByHipId = new Map(
+    snapshot.allPositions.flatMap((entry) =>
+      entry.stars.map((star) => [star.hipId, entry.sign.name] as const),
+    ),
+  )
+  const uniqueVisibleStars = new Map<
+    number,
+    (SkySnapshot['fieldStarPositions'][number] | SkySnapshot['allPositions'][number]['stars'][number]) & {
+      name: string
+    }
+  >()
+
+  ;[...snapshot.allPositions.flatMap((entry) => entry.stars), ...snapshot.fieldStarPositions].forEach(
+    (star) => {
+      if (!star.name || star.position.altitude <= 0 || uniqueVisibleStars.has(star.hipId)) {
+        return
+      }
+
+      uniqueVisibleStars.set(star.hipId, {
+        ...star,
+        name: star.name,
+      })
+    },
+  )
+
+  return Array.from(uniqueVisibleStars.values())
+    .sort((first, second) => first.magnitude - second.magnitude || second.position.altitude - first.position.altitude)
+    .slice(0, 6)
+    .map((star) => {
+      const referenceStar = referenceStarsByName.get(normalizeStarName(star.name))
+      const constellationName = signNameByHipId.get(star.hipId)
+
+      return {
+        key: `bright-${star.hipId}`,
+        name: star.name,
+        subtitle: constellationName ?? 'Visible above the horizon',
+        meta: [
+          `Mag ${formatStarMagnitude(star.magnitude)}`,
+          formatCompassLabel(star.position.azimuth),
+          formatAltitudeLabel(star.position.altitude),
+        ].join(' / '),
+        focus: referenceStar
+          ? {
+              kind: 'star',
+              starName: referenceStar.name,
+            }
+          : null,
+        isActive: currentFocus.kind === 'star' && currentFocus.starName === star.name,
+      }
+    })
+}
+
+function getPopularVisibleStars(
+  snapshot: SkySnapshot,
+  currentFocus: SkyFocus,
+): VisiblePopularStarRailItem[] {
+  return snapshot.referenceStarPositions
+    .filter((star) => star.position.altitude > 0)
+    .sort((first, second) => second.priority - first.priority || second.position.altitude - first.position.altitude)
+    .slice(0, 6)
+    .map((star) => ({
+      key: `popular-${star.name}`,
+      name: star.name,
+      subtitle: star.constellation,
+      meta: [
+        formatCompassLabel(star.position.azimuth),
+        formatAltitudeLabel(star.position.altitude),
+      ].join(' / '),
+      focus: {
+        kind: 'star',
+        starName: star.name,
+      },
+      isActive: currentFocus.kind === 'star' && currentFocus.starName === star.name,
+    }))
+}
+
+function normalizeStarName(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+function formatStarMagnitude(value: number): string {
+  return Math.abs(value) >= 10 ? value.toFixed(0) : value.toFixed(1)
+}
+
+function getVisibilityLabel(altitude: number): string {
+  return altitude > 0 ? 'Visible now' : 'Below horizon'
 }

@@ -54,7 +54,7 @@ export function drawSkyScene(
   drawSkyField(ctx, scene.visibleFieldStars)
   drawReferenceStars(ctx, scene.visibleReferenceStars, focus)
   drawConstellations(ctx, scene.visibleConstellations, selectedSignKey, focus)
-  drawHorizon(ctx, scene, surface.width)
+  drawHorizon(ctx, scene)
 }
 
 function drawSkyBackground(
@@ -91,10 +91,10 @@ function drawSkyGuideOverlay(
 ): void {
   ctx.save()
   ctx.globalAlpha = 0.72
-  ctx.font = '12px "IBM Plex Mono"'
+  ctx.font = '12px "Anonymous Pro"'
   ctx.textBaseline = 'alphabetic'
 
-  scene.altitudeGuides.forEach(({ altitude, label, y, major }) => {
+  scene.altitudeGuides.forEach(({ altitude, label, paths, labelPoint, major }) => {
     ctx.strokeStyle =
       altitude < 0
         ? major
@@ -105,31 +105,48 @@ function drawSkyGuideOverlay(
           : 'rgba(255,255,255,0.1)'
     ctx.lineWidth = 1
     ctx.setLineDash(major ? [6, 10] : [3, 12])
-    ctx.beginPath()
-    ctx.moveTo(0, y)
-    ctx.lineTo(width, y)
-    ctx.stroke()
+    paths.forEach((path) => {
+      ctx.beginPath()
+      ctx.moveTo(path[0].x, path[0].y)
 
-    ctx.setLineDash([])
-    ctx.fillStyle = 'rgba(255,255,255,0.54)'
-    ctx.textAlign = 'left'
-    ctx.fillText(label, 12, Math.max(18, Math.min(height - 10, y - 6)))
+      for (let index = 1; index < path.length; index += 1) {
+        ctx.lineTo(path[index].x, path[index].y)
+      }
+
+      ctx.stroke()
+    })
+
+    if (labelPoint) {
+      ctx.setLineDash([])
+      ctx.fillStyle = 'rgba(255,255,255,0.54)'
+      ctx.textAlign = 'left'
+      ctx.fillText(label, 12, Math.max(18, Math.min(height - 10, labelPoint.y - 6)))
+    }
   })
 
-  scene.azimuthGuides.forEach(({ label, x, major }) => {
+  scene.azimuthGuides.forEach(({ label, paths, labelPoint, major }) => {
     ctx.strokeStyle = major ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)'
     ctx.lineWidth = 1
     ctx.setLineDash(major ? [6, 11] : [3, 13])
-    ctx.beginPath()
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x, height)
-    ctx.stroke()
+    paths.forEach((path) => {
+      ctx.beginPath()
+      ctx.moveTo(path[0].x, path[0].y)
 
-    if (major) {
+      for (let index = 1; index < path.length; index += 1) {
+        ctx.lineTo(path[index].x, path[index].y)
+      }
+
+      ctx.stroke()
+    })
+
+    if (major && labelPoint) {
       ctx.setLineDash([])
       ctx.fillStyle = 'rgba(255,255,255,0.54)'
-      ctx.textAlign = 'center'
-      ctx.fillText(label, x, height - 14)
+      const placement = getEdgeAwareLabelPlacement(labelPoint, width, height)
+      ctx.textAlign = placement.textAlign
+      ctx.textBaseline = placement.textBaseline
+      ctx.fillText(label, placement.x, placement.y)
+      ctx.textBaseline = 'alphabetic'
     }
   })
 
@@ -143,15 +160,19 @@ function drawSkyField(
   ctx.save()
 
   stars.forEach((star) => {
+    const isBelowHorizon = star.position.altitude < 0
+    const opacity = isBelowHorizon ? star.opacity * 0.18 : star.opacity
+    const haloOpacity = isBelowHorizon ? 0 : star.opacity * 0.12
+
     if (star.haloRadius > 0) {
-      ctx.globalAlpha = star.opacity * 0.12
+      ctx.globalAlpha = haloOpacity
       ctx.fillStyle = star.color
       ctx.beginPath()
       ctx.arc(star.x, star.y, star.haloRadius, 0, Math.PI * 2)
       ctx.fill()
     }
 
-    ctx.globalAlpha = star.opacity
+    ctx.globalAlpha = opacity
     ctx.fillStyle = star.color
     ctx.beginPath()
     ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2)
@@ -175,20 +196,41 @@ function drawConstellations(
       const isSelected = sign.key === selectedSignKey
       const isBelowHorizon = position.altitude < 0
       const isFocused = focus.kind === 'sign' && focus.signKey === sign.key
-      const strokeOpacity = isSelected ? 0.98 : isBelowHorizon ? 0.28 : 0.48
-      const textOpacity = isSelected ? 0.95 : isBelowHorizon ? 0.38 : 0.58
+      const strokeOpacity = isSelected
+        ? isBelowHorizon
+          ? 0.5
+          : 0.98
+        : isBelowHorizon
+          ? 0.14
+          : 0.48
+      const textOpacity = isSelected
+        ? isBelowHorizon
+          ? 0.7
+          : 0.95
+        : isBelowHorizon
+          ? 0.2
+          : 0.58
       const strokeWidth = isSelected ? 2.4 : 1.3
 
       ctx.strokeStyle = sign.accent
       ctx.shadowColor = sign.accent
       ctx.lineWidth = strokeWidth
       ctx.lineCap = 'round'
+      ctx.setLineDash(isBelowHorizon ? [4, 9] : [])
       ctx.globalAlpha = strokeOpacity
 
-      visibleEdges.forEach(({ start, end }) => {
+      visibleEdges.forEach(({ points }) => {
         ctx.beginPath()
-        ctx.moveTo(start.x, start.y)
-        ctx.lineTo(end.x, end.y)
+
+        points.forEach((point, index) => {
+          if (index === 0) {
+            ctx.moveTo(point.x, point.y)
+            return
+          }
+
+          ctx.lineTo(point.x, point.y)
+        })
+
         ctx.stroke()
       })
 
@@ -198,17 +240,28 @@ function drawConstellations(
         }
 
         ctx.shadowColor = 'rgba(255,255,255,0.4)'
-        ctx.globalAlpha = isFocused ? 1 : isSelected ? 0.92 : isBelowHorizon ? 0.55 : 0.76
+        ctx.globalAlpha = isFocused
+          ? isBelowHorizon
+            ? 0.74
+            : 1
+          : isSelected
+            ? isBelowHorizon
+              ? 0.56
+              : 0.92
+            : isBelowHorizon
+              ? 0.2
+              : 0.76
         ctx.fillStyle = '#ffffff'
         ctx.beginPath()
         ctx.arc(point.x, point.y, point.radius, 0, Math.PI * 2)
         ctx.fill()
       })
 
+      ctx.setLineDash([])
       ctx.shadowBlur = 0
       ctx.globalAlpha = textOpacity
       ctx.fillStyle = '#ffffff'
-      ctx.font = `${labelFontSize}px "IBM Plex Mono"`
+      ctx.font = `${labelFontSize}px "Anonymous Pro"`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'alphabetic'
       ctx.fillText(labelText, labelX, labelY)
@@ -231,16 +284,17 @@ function drawReferenceStars(
 
   stars.forEach((star) => {
     const isFocused = focus.kind === 'star' && focus.starName === star.name
-    const opacity = star.position.altitude < 0 ? 0.38 : 0.62
+    const isBelowHorizon = star.position.altitude < 0
+    const opacity = isBelowHorizon ? 0.22 : 0.62
 
     if (isFocused) {
-      ctx.globalAlpha = 0.22
+      ctx.globalAlpha = isBelowHorizon ? 0.14 : 0.22
       ctx.fillStyle = star.color
       ctx.beginPath()
       ctx.arc(star.x, star.y, 11, 0, Math.PI * 2)
       ctx.fill()
 
-      ctx.globalAlpha = 0.85
+      ctx.globalAlpha = isBelowHorizon ? 0.55 : 0.85
       ctx.strokeStyle = star.color
       ctx.lineWidth = 1.4
       ctx.beginPath()
@@ -256,19 +310,58 @@ function drawReferenceStars(
 
     ctx.globalAlpha = isFocused ? 0.92 : opacity
     ctx.fillStyle = star.color
-    ctx.font = `${star.labelFontSize}px "IBM Plex Mono"`
+    ctx.font = `${star.labelFontSize}px "Anonymous Pro"`
     ctx.fillText(star.name, star.labelX, star.labelY)
   })
 
   ctx.restore()
 }
 
+function getEdgeAwareLabelPlacement(
+  point: { x: number; y: number },
+  width: number,
+  height: number,
+): {
+  x: number
+  y: number
+  textAlign: CanvasTextAlign
+  textBaseline: CanvasTextBaseline
+} {
+  const edgeThreshold = 28
+  let x = point.x
+  let y = point.y
+  let textAlign: CanvasTextAlign = 'center'
+  let textBaseline: CanvasTextBaseline = 'middle'
+
+  if (point.x <= edgeThreshold) {
+    textAlign = 'left'
+    x += 6
+  } else if (point.x >= width - edgeThreshold) {
+    textAlign = 'right'
+    x -= 6
+  }
+
+  if (point.y <= edgeThreshold) {
+    textBaseline = 'top'
+    y += 6
+  } else if (point.y >= height - edgeThreshold) {
+    textBaseline = 'bottom'
+    y -= 6
+  }
+
+  return {
+    x,
+    y,
+    textAlign,
+    textBaseline,
+  }
+}
+
 function drawHorizon(
   ctx: CanvasRenderingContext2D,
   scene: SkyScene,
-  width: number,
 ): void {
-  if (!scene.horizonLine) {
+  if (!scene.horizon) {
     return
   }
 
@@ -276,15 +369,24 @@ function drawHorizon(
   ctx.globalAlpha = 0.9
   ctx.strokeStyle = 'rgba(255,255,255,0.35)'
   ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.moveTo(0, scene.horizonY)
-  ctx.lineTo(width, scene.horizonY)
-  ctx.stroke()
+  scene.horizon.paths.forEach((path) => {
+    ctx.beginPath()
+    ctx.moveTo(path[0].x, path[0].y)
 
-  ctx.fillStyle = 'rgba(255,255,255,0.72)'
-  ctx.font = '12px "IBM Plex Mono"'
-  ctx.textAlign = 'right'
-  ctx.textBaseline = 'alphabetic'
-  ctx.fillText('horizon / 0 deg', width - 28, Math.max(18, scene.horizonY - 10))
+    for (let index = 1; index < path.length; index += 1) {
+      ctx.lineTo(path[index].x, path[index].y)
+    }
+
+    ctx.stroke()
+  })
+
+  if (scene.horizon.labelPoint) {
+    ctx.fillStyle = 'rgba(255,255,255,0.72)'
+    ctx.font = '12px "Anonymous Pro"'
+    ctx.textAlign = 'right'
+    ctx.textBaseline = 'alphabetic'
+    ctx.fillText('horizon / 0 deg', scene.horizon.labelPoint.x - 10, scene.horizon.labelPoint.y - 10)
+  }
+
   ctx.restore()
 }

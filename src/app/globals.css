@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;700&display=swap');
-
 :root {
   --canvas: #08111f;
   --ink: #eef4ff;
@@ -11,9 +9,9 @@
     radial-gradient(circle at 18% 14%, rgba(98, 126, 214, 0.24), transparent 28%),
     radial-gradient(circle at 78% 18%, rgba(231, 236, 255, 0.08), transparent 22%),
     linear-gradient(180deg, rgba(8, 16, 30, 0.98), rgba(11, 22, 48, 0.98));
-  --mono: 'IBM Plex Mono', monospace;
-  --body: 'Space Grotesk', sans-serif;
-  --serif: 'Instrument Serif', serif;
+  --mono: var(--font-mono), 'Anonymous Pro', monospace;
+  --body: var(--mono);
+  --serif: var(--mono);
   color-scheme: dark;
   font-family: var(--body);
   line-height: 1.5;
@@ -378,11 +376,11 @@ code {
 }
 
 .monograph-intro h3 {
-  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-family: var(--mono);
   font-size: clamp(3rem, 5vw, 5rem);
   line-height: 0.92;
-  letter-spacing: -0.05em;
-  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-weight: 500;
 }
 
 .monograph-role {
@@ -708,6 +706,62 @@ code {
   cursor: grabbing;
 }
 
+.sky-canvas-shell {
+  position: relative;
+  min-height: 0;
+  height: 100%;
+}
+
+.sky-canvas-visibility,
+.sky-portrait__visibility-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.34rem 0.58rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.sky-canvas-visibility::before,
+.sky-portrait__visibility-badge::before {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.sky-canvas-visibility {
+  position: absolute;
+  top: 0.9rem;
+  left: 0.9rem;
+  z-index: 1;
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 24px rgba(1, 6, 18, 0.18);
+}
+
+.sky-canvas-visibility--visible,
+.sky-portrait__visibility-badge--visible {
+  color: #8ef0b8;
+  border-color: rgba(102, 219, 149, 0.34);
+  background: rgba(10, 42, 24, 0.72);
+}
+
+.sky-canvas-visibility--hidden,
+.sky-portrait__visibility-badge--hidden {
+  color: #f1bf86;
+  border-color: rgba(235, 169, 95, 0.3);
+  background: rgba(55, 27, 9, 0.68);
+}
+
 .sky-details {
   min-width: 0;
   min-height: 0;
@@ -784,6 +838,10 @@ code {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.62);
+}
+
+.sky-portrait__visibility-badge {
+  margin-top: 0.08rem;
 }
 
 .sky-portrait__fact {
@@ -913,8 +971,93 @@ code {
   line-height: 1.2;
 }
 
+.zodiac-rail .zodiac-list button small {
+  font-family: var(--mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(220, 230, 255, 0.54);
+}
+
+.zodiac-list button.is-below-horizon strong,
+.zodiac-list button.is-below-horizon span,
+.zodiac-list button.is-below-horizon small {
+  opacity: 0.48;
+}
+
+.zodiac-list button.is-active.is-below-horizon strong,
+.zodiac-list button.is-active.is-below-horizon span,
+.zodiac-list button.is-active.is-below-horizon small {
+  opacity: 0.82;
+}
+
 .zodiac-list--popular {
   gap: 0.5rem;
+}
+
+.sky-object-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.sky-object-row {
+  display: grid;
+  gap: 0.16rem;
+  padding: 0 0 0.45rem;
+  border: 0;
+  border-bottom: 1px solid var(--sky-line);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.sky-object-row--static {
+  cursor: default;
+}
+
+.sky-object-row.is-active {
+  border-bottom-color: currentColor;
+}
+
+.sky-object-row strong,
+.sky-object-row span,
+.sky-object-row small {
+  color: inherit;
+}
+
+.sky-object-row strong {
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.sky-object-row span {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  color: var(--sky-muted);
+}
+
+.sky-object-row small {
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(220, 230, 255, 0.52);
+}
+
+.sky-object-row:hover,
+.sky-object-row:focus-visible {
+  border-bottom-color: rgba(220, 230, 255, 0.46);
+}
+
+.sky-object-row--static:hover,
+.sky-object-row--static:focus-visible {
+  border-bottom-color: var(--sky-line);
+}
+
+.sky-object-row:focus-visible {
+  outline: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

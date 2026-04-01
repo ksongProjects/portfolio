@@ -85,6 +85,89 @@ const popularConstellationMeta = new Map<
   ],
 ])
 
+function parseHipIdList(value: string | null | undefined, constellationKey: string): number[] {
+  if (typeof value !== 'string') {
+    console.warn(
+      `[sky] Missing starHipIdsJson for constellation "${constellationKey}". Falling back to an empty star list.`,
+    )
+    return []
+  }
+
+  const trimmed = value.trim()
+
+  if (!trimmed || trimmed === 'undefined' || trimmed === 'null') {
+    console.warn(
+      `[sky] Invalid starHipIdsJson for constellation "${constellationKey}". Falling back to an empty star list.`,
+    )
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as unknown
+
+    if (!Array.isArray(parsed)) {
+      console.warn(
+        `[sky] starHipIdsJson for constellation "${constellationKey}" did not parse to an array. Falling back to an empty star list.`,
+      )
+      return []
+    }
+
+    return parsed.filter((hipId): hipId is number => typeof hipId === 'number')
+  } catch (error) {
+    console.warn(
+      `[sky] Failed to parse starHipIdsJson for constellation "${constellationKey}". Falling back to an empty star list.`,
+      error,
+    )
+    return []
+  }
+}
+
+function parseEdgeHipPairs(
+  value: string | null | undefined,
+  constellationKey: string,
+): Array<[number, number]> {
+  if (typeof value !== 'string') {
+    console.warn(
+      `[sky] Missing edgeHipPairsJson for constellation "${constellationKey}". Falling back to an empty edge list.`,
+    )
+    return []
+  }
+
+  const trimmed = value.trim()
+
+  if (!trimmed || trimmed === 'undefined' || trimmed === 'null') {
+    console.warn(
+      `[sky] Invalid edgeHipPairsJson for constellation "${constellationKey}". Falling back to an empty edge list.`,
+    )
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as unknown
+
+    if (!Array.isArray(parsed)) {
+      console.warn(
+        `[sky] edgeHipPairsJson for constellation "${constellationKey}" did not parse to an array. Falling back to an empty edge list.`,
+      )
+      return []
+    }
+
+    return parsed.filter(
+      (pair): pair is [number, number] =>
+        Array.isArray(pair) &&
+        pair.length === 2 &&
+        typeof pair[0] === 'number' &&
+        typeof pair[1] === 'number',
+    )
+  } catch (error) {
+    console.warn(
+      `[sky] Failed to parse edgeHipPairsJson for constellation "${constellationKey}". Falling back to an empty edge list.`,
+      error,
+    )
+    return []
+  }
+}
+
 export async function ensureSkyDataset(): Promise<SkyDataset> {
   if (await isSkyCatalogEmpty()) {
     await syncSkyCatalog()
@@ -163,8 +246,8 @@ export async function getSkyDataset(): Promise<SkyDataset> {
   )
 
   const allConstellations: ZodiacSign[] = constellations.map((constellation) => {
-    const starHipIds = JSON.parse(constellation.starHipIdsJson) as number[]
-    const edgeHipPairs = JSON.parse(constellation.edgeHipPairsJson) as Array<[number, number]>
+    const starHipIds = parseHipIdList(constellation.starHipIdsJson, constellation.key)
+    const edgeHipPairs = parseEdgeHipPairs(constellation.edgeHipPairsJson, constellation.key)
     const starsForConstellation = starHipIds
       .map((hipId) => starMap.get(hipId))
       .filter((star): star is SkyCatalogStar => star !== undefined)
