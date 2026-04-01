@@ -209,7 +209,7 @@ function drawConstellations(
       ctx.globalAlpha = textOpacity
       ctx.fillStyle = '#ffffff'
       ctx.font = `${labelFontSize}px "IBM Plex Mono"`
-      ctx.textAlign = 'left'
+      ctx.textAlign = 'center'
       ctx.textBaseline = 'alphabetic'
       ctx.fillText(labelText, labelX, labelY)
       ctx.shadowBlur = 10

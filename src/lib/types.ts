@@ -15,9 +15,10 @@ export type ProjectSeed = {
   title: string
   strapline: string
   description: string
-  repoHref: string
+  repoHref?: string
   liveHref?: string
   liveLabel?: string
+  techStack?: string[]
   palette: [string, string]
   accent: string
 }
@@ -41,7 +42,11 @@ export type ZodiacSign = {
   key: string
   name: string
   symbol: string
+  group?: 'zodiac' | 'popular'
   dates: string
+  railSubtitle?: string
+  metaLabel?: string
+  metaValue?: string
   centerRa: number
   centerDec: number
   accent: string
@@ -50,6 +55,10 @@ export type ZodiacSign = {
   brightestStarSummary?: string | null
   brightestStarImageUrl?: string | null
   brightestStarSubtitle?: string | null
+  brightestStarImageLicenseName?: string | null
+  brightestStarImageLicenseUrl?: string | null
+  brightestStarImageAttribution?: string | null
+  brightestStarImageSourceUrl?: string | null
   stars: SkyCatalogStar[]
   edges: Array<[number, number]>
 }
@@ -63,12 +72,18 @@ export type ReferenceStar = {
   constellation: string
   fact: string
   imageUrl?: string | null
+  imageLicenseName?: string | null
+  imageLicenseUrl?: string | null
+  imageAttribution?: string | null
+  imageSourceUrl?: string | null
   zodiacSignKey?: string
 }
 
 export type SkyDataset = {
   zodiacSigns: ZodiacSign[]
   zodiacSignsByYear: ZodiacSign[]
+  popularConstellations: ZodiacSign[]
+  allConstellations: ZodiacSign[]
   fieldStars: SkyCatalogStar[]
   referenceStars: ReferenceStar[]
 }

@@ -51,11 +51,11 @@ type ViewCenter = {
 
 export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
   function NightSkySection({ dataset, initialNowIso, isActive }, ref) {
-    const initialSign = findZodiacSign(dataset, DEFAULT_SIGN_KEY)
+    const initialSign = findConstellation(dataset, DEFAULT_SIGN_KEY)
     const initialNow = new Date(initialNowIso)
     const initialSnapshot = buildSkySnapshot(
       initialSign,
-      dataset.zodiacSigns,
+      dataset.allConstellations,
       dataset.fieldStars,
       dataset.referenceStars,
       FALLBACK_LOCATION,
@@ -83,6 +83,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
     const [location, setLocation] = useState<AppLocation>(FALLBACK_LOCATION)
     const [now, setNow] = useState(initialNow)
     const [snapshot, setSnapshot] = useState(initialSnapshot)
+    const [isDetailsOpen, setIsDetailsOpen] = useState(true)
 
     const updateStatusLine = useEffectEvent((nextSnapshot?: SkySnapshot) => {
       const snapshotValue = nextSnapshot ?? snapshotRef.current
@@ -154,11 +155,28 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       })
     })
 
+    const recenterViewToSign = useEffectEvent((signKey: string, sourceSnapshot?: SkySnapshot) => {
+      const snapshotValue = sourceSnapshot ?? snapshotRef.current
+      const signEntry = snapshotValue?.allPositions.find((entry) => entry.sign.key === signKey)
+
+      if (!snapshotValue || !signEntry) {
+        return
+      }
+
+      viewCenterRef.current = {
+        azimuth: normalizeAngle(signEntry.position.azimuth),
+        altitude: clampViewAltitude(signEntry.position.altitude),
+      }
+
+      updateStatusLine(snapshotValue)
+      scheduleRender()
+    })
+
     const syncSnapshot = useEffectEvent((recenterView: boolean) => {
-      const selectedSign = findZodiacSign(dataset, selectedSignKey)
+      const selectedSign = findConstellation(dataset, selectedSignKey)
       const nextSnapshot = buildSkySnapshot(
         selectedSign,
-        dataset.zodiacSigns,
+        dataset.allConstellations,
         dataset.fieldStars,
         dataset.referenceStars,
         location,
@@ -169,10 +187,8 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       setSnapshot(nextSnapshot)
 
       if (recenterView || !viewCenterRef.current) {
-        viewCenterRef.current = {
-          azimuth: normalizeAngle(nextSnapshot.current.position.azimuth),
-          altitude: clampViewAltitude(nextSnapshot.current.position.altitude),
-        }
+        recenterViewToSign(selectedSign.key, nextSnapshot)
+        return
       }
 
       updateStatusLine(nextSnapshot)
@@ -238,7 +254,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       const savedSign = readStorage<string>(SKY_STORAGE_KEYS.sign, DEFAULT_SIGN_KEY)
       const savedGuide = readStorage<string>(SKY_STORAGE_KEYS.guide, 'shown')
       const frame = window.requestAnimationFrame(() => {
-        if (dataset.zodiacSigns.some((sign) => sign.key === savedSign)) {
+        if (dataset.allConstellations.some((sign) => sign.key === savedSign)) {
           recenterNextSnapshotRef.current = true
           setSelectedSignKey(savedSign)
           setSkyFocus({
@@ -253,7 +269,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       return () => {
         window.cancelAnimationFrame(frame)
       }
-    }, [dataset.zodiacSigns])
+    }, [dataset.allConstellations])
 
     useEffect(() => {
       writeStorage(SKY_STORAGE_KEYS.sign, selectedSignKey)
@@ -466,8 +482,29 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       }
     }, [])
 
+    const handleDetailsFocusSelect = useEffectEvent((nextFocus: SkyFocus) => {
+      if (nextFocus.kind === 'sign') {
+        setSelectedSignKey((current) => (current === nextFocus.signKey ? current : nextFocus.signKey))
+        setSkyFocus(nextFocus)
+        return
+      }
+
+      const relatedStar = snapshotRef.current.referenceStarPositions.find(
+        (entry) => entry.name === nextFocus.starName,
+      )
+      const relatedSignKey = relatedStar?.zodiacSignKey
+
+      if (relatedSignKey) {
+        setSelectedSignKey((current) =>
+          current === relatedSignKey ? current : relatedSignKey,
+        )
+      }
+
+      setSkyFocus(nextFocus)
+    })
+
     const details = getSkyDetailsContent(skyFocus, snapshot, selectedSignKey)
-    const selectedSign = findZodiacSign(dataset, selectedSignKey)
+    const selectedSign = findConstellation(dataset, selectedSignKey)
 
     return (
       <section className="stars-demo" id="stars" ref={ref}>
@@ -509,41 +546,99 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
 
           <aside
             className="zodiac-rail"
-            aria-label="Zodiac sign selection"
+            aria-label="Constellation selection"
             aria-hidden={!isActive}
+            data-details-open={isDetailsOpen ? 'true' : 'false'}
           >
-            <div className="zodiac-rail__drawer">
-              <p className="zodiac-rail__label">Sky details</p>
-              <SkyDetailsDrawer details={details} />
-            </div>
+            {isDetailsOpen ? (
+              <div className="zodiac-rail__drawer" id="sky-details-panel">
+                <p className="zodiac-rail__label">Sky details</p>
+                <SkyDetailsDrawer details={details} onSelectFocus={handleDetailsFocusSelect} />
+              </div>
+            ) : null}
 
-            <div className="zodiac-rail__inner">
-              <p className="zodiac-rail__label">Zodiac signs</p>
-              <div className="zodiac-list" id="zodiac-list">
-                {dataset.zodiacSignsByYear.map((sign) => {
-                  const isSelected = sign.key === selectedSignKey
+            <div className="zodiac-rail__inner-shell">
+              <button
+                type="button"
+                className="zodiac-rail__drawer-toggle"
+                aria-controls="sky-details-panel"
+                aria-expanded={isDetailsOpen}
+                aria-label={isDetailsOpen ? 'Hide sky details' : 'Show sky details'}
+                onClick={() => {
+                  setIsDetailsOpen((current) => !current)
+                }}
+              >
+                <span className="zodiac-rail__drawer-toggle-icon" aria-hidden="true">
+                  {isDetailsOpen ? '>' : '<'}
+                </span>
+              </button>
 
-                  return (
-                    <button
-                      type="button"
-                      key={sign.key}
-                      data-sign={sign.key}
-                      className={isSelected ? 'is-active' : undefined}
-                      aria-pressed={isSelected}
-                      onClick={() => {
-                        recenterNextSnapshotRef.current = true
-                        setSelectedSignKey(sign.key)
-                        setSkyFocus({
-                          kind: 'sign',
-                          signKey: sign.key,
-                        })
-                      }}
-                    >
-                      <strong>{sign.name}</strong>
-                      <span>{sign.dates}</span>
-                    </button>
-                  )
-                })}
+              <div className="zodiac-rail__inner">
+                <div className="zodiac-rail__groups">
+                  <p className="zodiac-rail__label">Zodiac signs</p>
+                  <div className="zodiac-list" id="zodiac-list">
+                    {dataset.zodiacSignsByYear.map((sign) => {
+                      const isSelected = sign.key === selectedSignKey
+
+                      return (
+                        <button
+                          type="button"
+                          key={sign.key}
+                          data-sign={sign.key}
+                          className={isSelected ? 'is-active' : undefined}
+                          aria-pressed={isSelected}
+                          onClick={() => {
+                            recenterNextSnapshotRef.current = true
+                            recenterViewToSign(sign.key)
+                            setSelectedSignKey(sign.key)
+                            setSkyFocus({
+                              kind: 'sign',
+                              signKey: sign.key,
+                            })
+                          }}
+                        >
+                          <strong>{sign.name}</strong>
+                          <span>{sign.railSubtitle ?? sign.dates}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {dataset.popularConstellations.length > 0 ? (
+                    <>
+                      <p className="zodiac-rail__label zodiac-rail__label--section">
+                        Popular constellations
+                      </p>
+                      <div className="zodiac-list zodiac-list--popular">
+                        {dataset.popularConstellations.map((sign) => {
+                          const isSelected = sign.key === selectedSignKey
+
+                          return (
+                            <button
+                              type="button"
+                              key={sign.key}
+                              data-sign={sign.key}
+                              className={isSelected ? 'is-active' : undefined}
+                              aria-pressed={isSelected}
+                              onClick={() => {
+                                recenterNextSnapshotRef.current = true
+                                recenterViewToSign(sign.key)
+                                setSelectedSignKey(sign.key)
+                                setSkyFocus({
+                                  kind: 'sign',
+                                  signKey: sign.key,
+                                })
+                              }}
+                            >
+                              <strong>{sign.name}</strong>
+                              <span>{sign.railSubtitle ?? sign.dates}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </>
+                  ) : null}
+                </div>
               </div>
             </div>
           </aside>
@@ -553,10 +648,11 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
   },
 )
 
-function findZodiacSign(dataset: SkyDataset, signKey: string) {
+function findConstellation(dataset: SkyDataset, signKey: string) {
   return (
-    dataset.zodiacSigns.find((sign) => sign.key === signKey) ??
-    dataset.zodiacSigns.find((sign) => sign.key === DEFAULT_SIGN_KEY) ??
+    dataset.allConstellations.find((sign) => sign.key === signKey) ??
+    dataset.allConstellations.find((sign) => sign.key === DEFAULT_SIGN_KEY) ??
+    dataset.allConstellations[0] ??
     dataset.zodiacSigns[0]
   )
 }

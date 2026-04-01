@@ -25,7 +25,7 @@ export function buildSkySnapshot(
 
     return {
       sign: entry,
-      position: getConstellationPosition(entry, observer, now),
+      position: getConstellationPosition(entry, stars, observer, now),
       stars,
     }
   })
@@ -39,7 +39,7 @@ export function buildSkySnapshot(
   }))
   const currentPosition =
     allPositions.find((entry) => entry.sign.key === sign.key)?.position ??
-    getConstellationPosition(sign, observer, now)
+    getConstellationPosition(sign, [], observer, now)
   const sunPosition = getSunPosition(observer, now)
   const actualSky = sunPosition.altitude <= -6 ? 'night' : 'day'
 
@@ -59,10 +59,20 @@ export function buildSkySnapshot(
 
 function getConstellationPosition(
   sign: ZodiacSign,
+  stars: Array<{ position: ConstellationPosition }>,
   observer: Observer,
   time: Date,
 ): ConstellationPosition {
-  const horizontal = Horizon(time, observer, sign.centerRa, sign.centerDec, 'normal')
+  if (stars.length > 0) {
+    return {
+      azimuth: getCircularMeanDegrees(stars.map((star) => star.position.azimuth)),
+      altitude:
+        stars.reduce((sum, star) => sum + star.position.altitude, 0) / Math.max(stars.length, 1),
+    }
+  }
+
+  const normalizedRa = sign.centerRa > 24 ? sign.centerRa / 15 : sign.centerRa
+  const horizontal = Horizon(time, observer, normalizedRa, sign.centerDec, 'normal')
 
   return {
     azimuth: horizontal.azimuth,
@@ -91,4 +101,32 @@ function getSunPosition(observer: Observer, time: Date): ConstellationPosition {
     azimuth: horizontal.azimuth,
     altitude: horizontal.altitude,
   }
+}
+
+function getCircularMeanDegrees(angles: number[]): number {
+  if (angles.length === 0) {
+    return 0
+  }
+
+  const vector = angles.reduce(
+    (sum, angle) => {
+      const radians = (angle * Math.PI) / 180
+
+      return {
+        x: sum.x + Math.cos(radians),
+        y: sum.y + Math.sin(radians),
+      }
+    },
+    { x: 0, y: 0 },
+  )
+
+  if (Math.abs(vector.x) < 1e-6 && Math.abs(vector.y) < 1e-6) {
+    return normalizeDegrees(angles[0] ?? 0)
+  }
+
+  return normalizeDegrees((Math.atan2(vector.y, vector.x) * 180) / Math.PI)
+}
+
+function normalizeDegrees(angle: number): number {
+  return ((angle % 360) + 360) % 360
 }

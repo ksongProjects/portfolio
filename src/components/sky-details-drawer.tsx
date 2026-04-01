@@ -1,10 +1,12 @@
+import type { SkyFocus } from '@/lib/types'
 import type { SkyDetailsContent } from '@/lib/sky/details'
 
 type SkyDetailsDrawerProps = {
   details: SkyDetailsContent
+  onSelectFocus: (focus: SkyFocus) => void
 }
 
-export function SkyDetailsDrawer({ details }: SkyDetailsDrawerProps) {
+export function SkyDetailsDrawer({ details, onSelectFocus }: SkyDetailsDrawerProps) {
   return (
     <div className="sky-details" id="sky-details" aria-live="polite">
       <div className="sky-details-stack">
@@ -19,6 +21,43 @@ export function SkyDetailsDrawer({ details }: SkyDetailsDrawerProps) {
             <h3 className="sky-portrait__title">{details.title}</h3>
             <p className="sky-portrait__subtitle">{details.subtitle}</p>
             <p className="sky-portrait__fact">{details.fact}</p>
+            {details.actions?.length ? (
+              <div className="sky-portrait__actions">
+                {details.actions.map((action) => (
+                  <button
+                    type="button"
+                    className="sky-portrait__action"
+                    key={action.label}
+                    onClick={() => {
+                      onSelectFocus(action.focus)
+                    }}
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {details.imageAttribution || details.imageLicenseName || details.imageSourceUrl ? (
+              <p className="sky-portrait__meta">
+                {details.imageAttribution ? (
+                  <span>{details.imageAttribution}</span>
+                ) : null}
+                {details.imageLicenseName ? (
+                  details.imageLicenseUrl ? (
+                    <a href={details.imageLicenseUrl} rel="noreferrer" target="_blank">
+                      {details.imageLicenseName}
+                    </a>
+                  ) : (
+                    <span>{details.imageLicenseName}</span>
+                  )
+                ) : null}
+                {details.imageSourceUrl ? (
+                  <a href={details.imageSourceUrl} rel="noreferrer" target="_blank">
+                    Source
+                  </a>
+                ) : null}
+              </p>
+            ) : null}
           </figcaption>
         </figure>
 
@@ -34,6 +73,17 @@ export function SkyDetailsDrawer({ details }: SkyDetailsDrawerProps) {
           ))}
         </div>
       </div>
+      <p className="sky-details__credit">
+        Constellation line data from{' '}
+        <a
+          href="https://github.com/Stellarium/stellarium-skycultures"
+          rel="noreferrer"
+          target="_blank"
+        >
+          Stellarium skycultures
+        </a>
+        .
+      </p>
     </div>
   )
 }

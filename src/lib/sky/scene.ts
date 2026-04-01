@@ -118,7 +118,13 @@ export function buildSkyViewportScene(
       const labelFontSize = 12
       const labelWidth = estimateMonoTextWidth(labelText, labelFontSize)
       const labelPlacement = getConstellationLabelPlacement(
-        bounds,
+        projected
+          .filter((point) => point.visible)
+          .map((point) => ({
+            x: point.x,
+            y: point.y,
+          })),
+        visibleEdges.flatMap((edge) => [edge.start, edge.end]),
         labelWidth,
         labelFontSize,
         width,
@@ -251,7 +257,7 @@ export function findSkyHitTarget(point: ScreenPoint, scene: SkyScene): SkyFocus 
     if (
       isPointInRect(
         point,
-        entry.labelX - 4,
+        entry.labelX - entry.labelWidth / 2 - 4,
         entry.labelY - entry.labelFontSize - 3,
         entry.labelWidth + 8,
         entry.labelFontSize + 8,
@@ -260,7 +266,7 @@ export function findSkyHitTarget(point: ScreenPoint, scene: SkyScene): SkyFocus 
       score = Math.min(score, 0.75)
     }
 
-    if (score <= 12 && score < bestScore) {
+    if (score <= 14 && score < bestScore) {
       bestScore = score
       bestTarget = {
         kind: 'sign',
@@ -273,37 +279,42 @@ export function findSkyHitTarget(point: ScreenPoint, scene: SkyScene): SkyFocus 
 }
 
 function getConstellationLabelPlacement(
-  bounds: SkyScene['visibleConstellations'][number]['bounds'],
+  visiblePoints: ScreenPoint[],
+  edgePoints: ScreenPoint[],
   labelWidth: number,
   labelFontSize: number,
   width: number,
   height: number,
 ): ScreenPoint {
-  const horizontalGap = 10
-  const minX = 12
-  const maxX = Math.max(minX, width - labelWidth - 12)
-  const preferRight = bounds.maxX <= width - labelWidth - horizontalGap - 12
-  const preferLeft = bounds.minX >= labelWidth + horizontalGap + 12
+  const source = visiblePoints.length > 0 ? visiblePoints : edgePoints
 
-  let x = preferRight
-    ? bounds.maxX + horizontalGap
-    : preferLeft
-      ? bounds.minX - labelWidth - horizontalGap
-      : bounds.minX + 4
-
-  x = Math.min(maxX, Math.max(minX, x))
-
-  const aboveY = bounds.minY - 8
-  const belowY = bounds.maxY + labelFontSize + 8
-  const sideY = bounds.minY + labelFontSize + 2
-
-  let y = aboveY
-
-  if (y < labelFontSize + 8) {
-    y = preferRight || preferLeft ? sideY : belowY
+  if (source.length === 0) {
+    return {
+      x: Math.max(labelWidth / 2 + 12, 24),
+      y: labelFontSize + 12,
+    }
   }
 
-  y = Math.min(height - 12, Math.max(labelFontSize + 8, y))
+  const center = source.reduce(
+    (accumulator, point) => ({
+      x: accumulator.x + point.x,
+      y: accumulator.y + point.y,
+    }),
+    { x: 0, y: 0 },
+  )
+  const centerX = center.x / source.length
+  const centerY = center.y / source.length
+  const minX = labelWidth / 2 + 12
+  const maxX = Math.max(minX, width - labelWidth / 2 - 12)
 
-  return { x, y }
+  let y = centerY - 8
+
+  if (y < labelFontSize + 10) {
+    y = centerY + labelFontSize + 10
+  }
+
+  return {
+    x: Math.min(maxX, Math.max(minX, centerX)),
+    y: Math.min(height - 12, Math.max(labelFontSize + 10, y)),
+  }
 }
