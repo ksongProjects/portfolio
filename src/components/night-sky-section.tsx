@@ -758,7 +758,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
     const details = getSkyDetailsContent(skyFocus, snapshot, selectedSignKey)
     const selectedSign = findConstellation(dataset, selectedSignKey)
     const brightestVisibleStars = getBrightestVisibleStars(snapshot, skyFocus)
-    const popularVisibleStars = getPopularVisibleStars(snapshot, skyFocus)
+    const popularStars = getPopularStars(snapshot, skyFocus)
     const signPositionByKey = new Map(
       snapshot.allPositions.map((entry) => [entry.sign.key, entry.position]),
     )
@@ -960,17 +960,17 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                     </section>
                   ) : null}
 
-                  {popularVisibleStars.length > 0 ? (
+                  {popularStars.length > 0 ? (
                     <section className="zodiac-rail__group">
                       <p className="zodiac-rail__label zodiac-rail__label--section">
-                        Popular stars above horizon
+                        Popular stars
                       </p>
-                      <div className="sky-object-list" aria-label="Popular stars above horizon">
-                        {popularVisibleStars.map((star) => (
+                      <div className="sky-object-list" aria-label="Popular stars">
+                        {popularStars.map((star) => (
                           <button
                             type="button"
                             key={star.key}
-                            className={`sky-object-row${star.isActive ? ' is-active' : ''}`}
+                            className={`sky-object-row${star.isActive ? ' is-active' : ''}${star.isBelowHorizon ? ' is-below-horizon' : ''}`}
                             aria-pressed={star.isActive}
                             onClick={() => {
                               selectReferenceStar(star.focus.starName, 'animate')
@@ -1003,19 +1003,20 @@ function findConstellation(dataset: SkyDataset, signKey: string) {
   )
 }
 
-type VisibleStarRailItem = {
+type StarRailItem = {
   key: string
   name: string
   subtitle: string
   meta: string
   isActive: boolean
+  isBelowHorizon: boolean
 }
 
-type VisibleBrightStarRailItem = VisibleStarRailItem & {
+type VisibleBrightStarRailItem = StarRailItem & {
   focus: { kind: 'star'; starName: string } | null
 }
 
-type VisiblePopularStarRailItem = VisibleStarRailItem & {
+type PopularStarRailItem = StarRailItem & {
   focus: { kind: 'star'; starName: string }
 }
 
@@ -1074,23 +1075,23 @@ function getBrightestVisibleStars(
             }
           : null,
         isActive: currentFocus.kind === 'star' && currentFocus.starName === star.name,
+        isBelowHorizon: false,
       }
     })
 }
 
-function getPopularVisibleStars(
+function getPopularStars(
   snapshot: SkySnapshot,
   currentFocus: SkyFocus,
-): VisiblePopularStarRailItem[] {
+): PopularStarRailItem[] {
   return snapshot.referenceStarPositions
-    .filter((star) => star.position.altitude > 0)
     .sort((first, second) => second.priority - first.priority || second.position.altitude - first.position.altitude)
-    .slice(0, 6)
     .map((star) => ({
       key: `popular-${star.name}`,
       name: star.name,
       subtitle: star.constellation,
       meta: [
+        getVisibilityLabel(star.position.altitude),
         formatCompassLabel(star.position.azimuth),
         formatAltitudeLabel(star.position.altitude),
       ].join(' / '),
@@ -1099,6 +1100,7 @@ function getPopularVisibleStars(
         starName: star.name,
       },
       isActive: currentFocus.kind === 'star' && currentFocus.starName === star.name,
+      isBelowHorizon: star.position.altitude <= 0,
     }))
 }
 

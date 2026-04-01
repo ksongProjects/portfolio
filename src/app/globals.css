@@ -1246,6 +1246,18 @@ code {
   color: rgba(220, 230, 255, 0.52);
 }
 
+.sky-object-row.is-below-horizon strong,
+.sky-object-row.is-below-horizon span,
+.sky-object-row.is-below-horizon small {
+  opacity: 0.48;
+}
+
+.sky-object-row.is-active.is-below-horizon strong,
+.sky-object-row.is-active.is-below-horizon span,
+.sky-object-row.is-active.is-below-horizon small {
+  opacity: 0.82;
+}
+
 .sky-object-row:hover,
 .sky-object-row:focus-visible {
   border-bottom-color: rgba(220, 230, 255, 0.46);
