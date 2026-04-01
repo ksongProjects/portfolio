@@ -4,8 +4,11 @@ import { forwardRef, useEffect, useEffectEvent, useRef, useState } from 'react'
 import {
   DEFAULT_SIGN_KEY,
   FALLBACK_LOCATION,
+  MAX_VERTICAL_VIEW_ANGLE,
+  MIN_VERTICAL_VIEW_ANGLE,
   SKY_STORAGE_KEYS,
   VERTICAL_VIEW_ANGLE,
+  VIEW_ANGLE_STEP,
 } from '@/lib/sky/constants'
 import { getSkyDetailsContent } from '@/lib/sky/details'
 import { drawSkyScene, resizeSkyCanvas } from '@/lib/sky/render'
@@ -13,6 +16,7 @@ import { buildSkyViewportScene, findSkyHitTarget } from '@/lib/sky/scene'
 import { buildSkySnapshot } from '@/lib/sky/snapshot'
 import type { SkyScene, SkySnapshot } from '@/lib/sky/types'
 import {
+  clamp,
   clampViewAltitude,
   formatAltitudeLabel,
   formatClock,
@@ -25,11 +29,11 @@ import {
 } from '@/lib/sky/utils'
 import type { AppLocation, SkyDataset, SkyFocus } from '@/lib/types'
 import { SkyDetailsDrawer } from './sky-details-drawer'
+import { SectionMobileNav } from './site-nav'
 
 type NightSkySectionProps = {
   dataset: SkyDataset
   initialNowIso: string
-  isActive: boolean
 }
 
 type SkyDragState =
@@ -39,6 +43,7 @@ type SkyDragState =
       startY: number
       startAzimuth: number
       startAltitude: number
+      startVerticalViewAngle: number
       width: number
       height: number
       moved: boolean
@@ -52,8 +57,64 @@ type ViewCenter = {
 
 type ViewMoveMode = 'none' | 'jump' | 'animate'
 
+type SkyPerformanceProfile = {
+  maxDpr: number
+  maxFieldStars: number
+  maxReferenceStars: number
+  edgeInterpolationSteps: number
+  showGuides: boolean
+  showFieldHalos: boolean
+  showReferenceLabels: boolean
+  constellationLabelMode: 'all' | 'focused'
+}
+
+function getSkyPerformanceProfile({
+  isCoarsePointer,
+  isDragging,
+}: {
+  isCoarsePointer: boolean
+  isDragging: boolean
+}): SkyPerformanceProfile {
+  if (!isCoarsePointer) {
+    return {
+      maxDpr: 2,
+      maxFieldStars: 700,
+      maxReferenceStars: 10,
+      edgeInterpolationSteps: 12,
+      showGuides: true,
+      showFieldHalos: true,
+      showReferenceLabels: true,
+      constellationLabelMode: 'all',
+    }
+  }
+
+  if (isDragging) {
+    return {
+      maxDpr: 1.2,
+      maxFieldStars: 140,
+      maxReferenceStars: 5,
+      edgeInterpolationSteps: 5,
+      showGuides: false,
+      showFieldHalos: false,
+      showReferenceLabels: false,
+      constellationLabelMode: 'focused',
+    }
+  }
+
+  return {
+    maxDpr: 1.35,
+    maxFieldStars: 240,
+    maxReferenceStars: 6,
+    edgeInterpolationSteps: 8,
+    showGuides: false,
+    showFieldHalos: false,
+    showReferenceLabels: false,
+    constellationLabelMode: 'focused',
+  }
+}
+
 export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
-  function NightSkySection({ dataset, initialNowIso, isActive }, ref) {
+  function NightSkySection({ dataset, initialNowIso }, ref) {
     const initialSign = findConstellation(dataset, DEFAULT_SIGN_KEY)
     const initialNow = new Date(initialNowIso)
     const initialSnapshot = buildSkySnapshot(
@@ -77,17 +138,19 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
     const renderQueuedRef = useRef(false)
     const dragStateRef = useRef<SkyDragState>(null)
     const recenterNextSnapshotRef = useRef(false)
+    const verticalViewAngleRef = useRef(VERTICAL_VIEW_ANGLE)
 
     const [selectedSignKey, setSelectedSignKey] = useState(initialSign.key)
     const [skyFocus, setSkyFocus] = useState<SkyFocus>({
       kind: 'sign',
       signKey: initialSign.key,
     })
-    const [showSkyGuide, setShowSkyGuide] = useState(true)
     const [location, setLocation] = useState<AppLocation>(FALLBACK_LOCATION)
     const [now, setNow] = useState(initialNow)
     const [snapshot, setSnapshot] = useState(initialSnapshot)
     const [isDetailsOpen, setIsDetailsOpen] = useState(true)
+    const [isCoarsePointer, setIsCoarsePointer] = useState(false)
+    const [verticalViewAngle, setVerticalViewAngle] = useState(VERTICAL_VIEW_ANGLE)
 
     const updateStatusLine = useEffectEvent((nextSnapshot?: SkySnapshot) => {
       const snapshotValue = nextSnapshot ?? snapshotRef.current
@@ -121,7 +184,11 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         return
       }
 
-      const surface = resizeSkyCanvas(canvas)
+      const performanceProfile = getSkyPerformanceProfile({
+        isCoarsePointer,
+        isDragging: dragStateRef.current?.moved === true,
+      })
+      const surface = resizeSkyCanvas(canvas, performanceProfile.maxDpr)
 
       if (!surface) {
         return
@@ -134,6 +201,13 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         viewCenter,
         surface.width,
         surface.height,
+        {
+          maxFieldStars: performanceProfile.maxFieldStars,
+          maxReferenceStars: performanceProfile.maxReferenceStars,
+          edgeInterpolationSteps: performanceProfile.edgeInterpolationSteps,
+          showGuides: performanceProfile.showGuides,
+          verticalViewAngle: verticalViewAngleRef.current,
+        },
       )
 
       sceneRef.current = scene
@@ -143,7 +217,10 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         surface,
         selectedSignKey,
         focus: skyFocus,
-        showGuide: showSkyGuide,
+        showGuide: performanceProfile.showGuides,
+        showFieldHalos: performanceProfile.showFieldHalos,
+        showReferenceLabels: performanceProfile.showReferenceLabels,
+        constellationLabelMode: performanceProfile.constellationLabelMode,
       })
     })
 
@@ -394,7 +471,6 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
 
     useEffect(() => {
       const savedSign = readStorage<string>(SKY_STORAGE_KEYS.sign, DEFAULT_SIGN_KEY)
-      const savedGuide = readStorage<string>(SKY_STORAGE_KEYS.guide, 'shown')
       const frame = window.requestAnimationFrame(() => {
         if (dataset.allConstellations.some((sign) => sign.key === savedSign)) {
           recenterNextSnapshotRef.current = true
@@ -404,8 +480,6 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
             signKey: savedSign,
           })
         }
-
-        setShowSkyGuide(savedGuide !== 'hidden')
       })
 
       return () => {
@@ -416,10 +490,6 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
     useEffect(() => {
       writeStorage(SKY_STORAGE_KEYS.sign, selectedSignKey)
     }, [selectedSignKey])
-
-    useEffect(() => {
-      writeStorage(SKY_STORAGE_KEYS.guide, showSkyGuide ? 'shown' : 'hidden')
-    }, [showSkyGuide])
 
     useEffect(() => {
       const shouldRecenter = recenterNextSnapshotRef.current || !viewCenterRef.current
@@ -434,7 +504,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
     useEffect(() => {
       updateStatusLine()
       scheduleRender()
-    }, [selectedSignKey, showSkyGuide, skyFocus, snapshot])
+    }, [selectedSignKey, skyFocus, snapshot])
 
     useEffect(() => {
       return () => {
@@ -469,6 +539,29 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
     }, [])
 
     useEffect(() => {
+      const mediaQuery = window.matchMedia('(pointer: coarse)')
+      const syncPointerMode = () => {
+        setIsCoarsePointer(mediaQuery.matches)
+      }
+
+      syncPointerMode()
+      mediaQuery.addEventListener('change', syncPointerMode)
+
+      return () => {
+        mediaQuery.removeEventListener('change', syncPointerMode)
+      }
+    }, [])
+
+    useEffect(() => {
+      scheduleRender()
+    }, [isCoarsePointer])
+
+    useEffect(() => {
+      verticalViewAngleRef.current = verticalViewAngle
+      scheduleRender()
+    }, [verticalViewAngle])
+
+    useEffect(() => {
       const canvas = canvasRef.current
 
       if (!canvas) {
@@ -476,12 +569,18 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       }
 
       const endDrag = (pointerId?: number) => {
+        const wasDragging = dragStateRef.current?.moved === true
+
         if (pointerId != null && canvas.hasPointerCapture(pointerId)) {
           canvas.releasePointerCapture(pointerId)
         }
 
         dragStateRef.current = null
         canvas.classList.remove('is-dragging')
+
+        if (wasDragging) {
+          scheduleRender()
+        }
       }
 
       const handlePointerDown = (event: PointerEvent) => {
@@ -501,6 +600,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
           startY: event.clientY,
           startAzimuth: viewCenter.azimuth,
           startAltitude: viewCenter.altitude,
+          startVerticalViewAngle: verticalViewAngleRef.current,
           width: Math.max(bounds.width, 1),
           height: Math.max(bounds.height, 1),
           moved: false,
@@ -514,6 +614,11 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         const dragState = dragStateRef.current
 
         if (!dragState || event.pointerId !== dragState.pointerId) {
+          if (isCoarsePointer || event.pointerType !== 'mouse') {
+            canvas.classList.remove('is-interactive')
+            return
+          }
+
           updateCanvasInteractivity(event)
           return
         }
@@ -535,10 +640,16 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         viewCenterRef.current = {
           azimuth: normalizeAngle(
             dragState.startAzimuth -
-              (deltaX / dragState.width) * getHorizontalViewAngle(dragState.width, dragState.height),
+              (deltaX / dragState.width) *
+                getHorizontalViewAngle(
+                  dragState.width,
+                  dragState.height,
+                  dragState.startVerticalViewAngle,
+                ),
           ),
           altitude: clampViewAltitude(
-            dragState.startAltitude + (deltaY / dragState.height) * VERTICAL_VIEW_ANGLE,
+            dragState.startAltitude +
+              (deltaY / dragState.height) * dragState.startVerticalViewAngle,
           ),
         }
 
@@ -593,7 +704,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         canvas.removeEventListener('lostpointercapture', handleLostPointerCapture)
         canvas.removeEventListener('pointerleave', handlePointerLeave)
       }
-    }, [])
+    }, [isCoarsePointer])
 
     useEffect(() => {
       if (!('geolocation' in navigator)) {
@@ -651,32 +762,30 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
     const signPositionByKey = new Map(
       snapshot.allPositions.map((entry) => [entry.sign.key, entry.position]),
     )
+    const canZoomIn = verticalViewAngle > MIN_VERTICAL_VIEW_ANGLE
+    const canZoomOut = verticalViewAngle < MAX_VERTICAL_VIEW_ANGLE
+
+    const adjustZoom = (direction: 'in' | 'out') => {
+      setVerticalViewAngle((current) =>
+        clamp(
+          MIN_VERTICAL_VIEW_ANGLE,
+          current + (direction === 'in' ? -VIEW_ANGLE_STEP : VIEW_ANGLE_STEP),
+          MAX_VERTICAL_VIEW_ANGLE,
+        ),
+      )
+    }
 
     return (
       <section className="stars-demo" id="stars" ref={ref}>
         <div className="stars-demo__inner">
-          <header className="section-head section-head--stars">
-            <p className="section-marker">02 / Night Sky</p>
-            <h2>Night Sky</h2>
-          </header>
-
-          <div className="stars-layout">
+          <SectionMobileNav currentSection="stars" />
+          <div
+            className="stars-layout"
+            data-details-open={isDetailsOpen ? 'true' : 'false'}
+          >
             <div className="sky-stage">
               <div className="sky-stage__header">
                 <div className="sky-stage__tools">
-                  <div className="sky-stage__toggles">
-                    <button
-                      type="button"
-                      className="sky-tool-toggle"
-                      id="sky-guide-toggle"
-                      aria-pressed={showSkyGuide}
-                      onClick={() => {
-                        setShowSkyGuide((current) => !current)
-                      }}
-                    >
-                      {showSkyGuide ? 'Hide guide overlay' : 'Show guide overlay'}
-                    </button>
-                  </div>
                   <p className="sky-stage__status" id="sky-status-line" ref={statusLineRef} />
                 </div>
               </div>
@@ -693,30 +802,44 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                   id="sky-canvas"
                   aria-label={`${selectedSign.name} constellation preview in night mode. Drag to pan and click visible stars or constellations for details.`}
                 />
+                <div className="sky-canvas-zoom" aria-label="Sky zoom controls">
+                  <button
+                    type="button"
+                    className="sky-canvas-zoom__button"
+                    aria-label="Zoom in"
+                    onClick={() => {
+                      adjustZoom('in')
+                    }}
+                    disabled={!canZoomIn}
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    className="sky-canvas-zoom__button"
+                    aria-label="Zoom out"
+                    onClick={() => {
+                      adjustZoom('out')
+                    }}
+                    disabled={!canZoomOut}
+                  >
+                    -
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <aside
-            className="zodiac-rail"
-            aria-label="Constellation selection"
-            aria-hidden={!isActive}
-            data-details-open={isDetailsOpen ? 'true' : 'false'}
-          >
-            {isDetailsOpen ? (
-              <div className="zodiac-rail__drawer" id="sky-details-panel">
-                <p className="zodiac-rail__label">Sky details</p>
-                <SkyDetailsDrawer details={details} onSelectFocus={handleDetailsFocusSelect} />
-              </div>
-            ) : null}
-
-            <div className="zodiac-rail__inner-shell">
+            <aside
+              className="zodiac-rail"
+              aria-label="Constellation selection"
+              data-details-open={isDetailsOpen ? 'true' : 'false'}
+            >
               <button
                 type="button"
                 className="zodiac-rail__drawer-toggle"
                 aria-controls="sky-details-panel"
                 aria-expanded={isDetailsOpen}
-                aria-label={isDetailsOpen ? 'Hide sky details' : 'Show sky details'}
+                aria-label={isDetailsOpen ? 'Hide details' : 'Show details'}
                 onClick={() => {
                   setIsDetailsOpen((current) => !current)
                 }}
@@ -726,37 +849,47 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                 </span>
               </button>
 
+              {isDetailsOpen ? (
+                <div className="zodiac-rail__drawer" id="sky-details-panel">
+                  <p className="zodiac-rail__label">Details</p>
+                  <SkyDetailsDrawer details={details} onSelectFocus={handleDetailsFocusSelect} />
+                </div>
+              ) : null}
+
               <div className="zodiac-rail__inner">
                 <div className="zodiac-rail__groups">
-                  <p className="zodiac-rail__label">Zodiac signs</p>
-                  <div className="zodiac-list" id="zodiac-list">
-                    {dataset.zodiacSignsByYear.map((sign) => {
-                      const isSelected = sign.key === selectedSignKey
-                      const altitude = signPositionByKey.get(sign.key)?.altitude ?? Number.NEGATIVE_INFINITY
-                      const visibilityLabel = getVisibilityLabel(altitude)
+                  <section className="zodiac-rail__group">
+                    <p className="zodiac-rail__label">Zodiac signs</p>
+                    <div className="zodiac-list" id="zodiac-list">
+                      {dataset.zodiacSignsByYear.map((sign) => {
+                        const isSelected = sign.key === selectedSignKey
+                        const altitude =
+                          signPositionByKey.get(sign.key)?.altitude ?? Number.NEGATIVE_INFINITY
+                        const visibilityLabel = getVisibilityLabel(altitude)
 
-                      return (
-                        <button
-                          type="button"
-                          key={sign.key}
-                          data-sign={sign.key}
-                          className={`${isSelected ? 'is-active ' : ''}${altitude <= 0 ? 'is-below-horizon' : ''}`.trim()}
-                          aria-pressed={isSelected}
-                          onClick={() => {
-                            recenterNextSnapshotRef.current = false
-                            selectSign(sign.key, 'animate')
-                          }}
-                        >
-                          <strong>{sign.name}</strong>
-                          <span>{sign.railSubtitle ?? sign.dates}</span>
-                          <small>{visibilityLabel}</small>
-                        </button>
-                      )
-                    })}
-                  </div>
+                        return (
+                          <button
+                            type="button"
+                            key={sign.key}
+                            data-sign={sign.key}
+                            className={`${isSelected ? 'is-active ' : ''}${altitude <= 0 ? 'is-below-horizon' : ''}`.trim()}
+                            aria-pressed={isSelected}
+                            onClick={() => {
+                              recenterNextSnapshotRef.current = false
+                              selectSign(sign.key, 'animate')
+                            }}
+                          >
+                            <strong>{sign.name}</strong>
+                            <span>{sign.railSubtitle ?? sign.dates}</span>
+                            <small>{visibilityLabel}</small>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </section>
 
                   {dataset.popularConstellations.length > 0 ? (
-                    <>
+                    <section className="zodiac-rail__group">
                       <p className="zodiac-rail__label zodiac-rail__label--section">
                         Popular constellations
                       </p>
@@ -764,7 +897,8 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                         {dataset.popularConstellations.map((sign) => {
                           const isSelected = sign.key === selectedSignKey
                           const altitude =
-                            signPositionByKey.get(sign.key)?.altitude ?? Number.NEGATIVE_INFINITY
+                            signPositionByKey.get(sign.key)?.altitude ??
+                            Number.NEGATIVE_INFINITY
                           const visibilityLabel = getVisibilityLabel(altitude)
 
                           return (
@@ -786,11 +920,11 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                           )
                         })}
                       </div>
-                    </>
+                    </section>
                   ) : null}
 
                   {brightestVisibleStars.length > 0 ? (
-                    <>
+                    <section className="zodiac-rail__group">
                       <p className="zodiac-rail__label zodiac-rail__label--section">
                         Brightest stars above horizon
                       </p>
@@ -823,11 +957,11 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                           )
                         })}
                       </div>
-                    </>
+                    </section>
                   ) : null}
 
                   {popularVisibleStars.length > 0 ? (
-                    <>
+                    <section className="zodiac-rail__group">
                       <p className="zodiac-rail__label zodiac-rail__label--section">
                         Popular stars above horizon
                       </p>
@@ -848,12 +982,12 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                           </button>
                         ))}
                       </div>
-                    </>
+                    </section>
                   ) : null}
                 </div>
               </div>
-            </div>
-          </aside>
+            </aside>
+          </div>
         </div>
       </section>
     )

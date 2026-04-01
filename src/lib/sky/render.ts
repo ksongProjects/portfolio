@@ -7,9 +7,15 @@ type DrawSkySceneOptions = {
   selectedSignKey: string
   focus: SkyFocus
   showGuide: boolean
+  showFieldHalos?: boolean
+  showReferenceLabels?: boolean
+  constellationLabelMode?: 'all' | 'focused'
 }
 
-export function resizeSkyCanvas(canvas: HTMLCanvasElement): SkySurface | null {
+export function resizeSkyCanvas(
+  canvas: HTMLCanvasElement,
+  maxDpr = Number.POSITIVE_INFINITY,
+): SkySurface | null {
   const bounds = canvas.getBoundingClientRect()
   const width = Math.max(1, Math.round(bounds.width))
   const height = Math.max(1, Math.round(bounds.height))
@@ -18,7 +24,7 @@ export function resizeSkyCanvas(canvas: HTMLCanvasElement): SkySurface | null {
     return null
   }
 
-  const dpr = window.devicePixelRatio || 1
+  const dpr = Math.min(window.devicePixelRatio || 1, maxDpr)
   const pixelWidth = Math.max(1, Math.round(width * dpr))
   const pixelHeight = Math.max(1, Math.round(height * dpr))
 
@@ -39,7 +45,16 @@ export function drawSkyScene(
   canvas: HTMLCanvasElement,
   options: DrawSkySceneOptions,
 ): void {
-  const { scene, surface, selectedSignKey, focus, showGuide } = options
+  const {
+    scene,
+    surface,
+    selectedSignKey,
+    focus,
+    showGuide,
+    showFieldHalos = true,
+    showReferenceLabels = true,
+    constellationLabelMode = 'all',
+  } = options
 
   ctx.setTransform(1, 0, 0, 1, 0, 0)
   ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -51,9 +66,9 @@ export function drawSkyScene(
     drawSkyGuideOverlay(ctx, scene, surface.width, surface.height)
   }
 
-  drawSkyField(ctx, scene.visibleFieldStars)
-  drawReferenceStars(ctx, scene.visibleReferenceStars, focus)
-  drawConstellations(ctx, scene.visibleConstellations, selectedSignKey, focus)
+  drawSkyField(ctx, scene.visibleFieldStars, showFieldHalos)
+  drawReferenceStars(ctx, scene.visibleReferenceStars, focus, showReferenceLabels)
+  drawConstellations(ctx, scene.visibleConstellations, selectedSignKey, focus, constellationLabelMode)
   drawHorizon(ctx, scene)
 }
 
@@ -156,6 +171,7 @@ function drawSkyGuideOverlay(
 function drawSkyField(
   ctx: CanvasRenderingContext2D,
   stars: SkyScene['visibleFieldStars'],
+  showFieldHalos: boolean,
 ): void {
   ctx.save()
 
@@ -164,7 +180,7 @@ function drawSkyField(
     const opacity = isBelowHorizon ? star.opacity * 0.18 : star.opacity
     const haloOpacity = isBelowHorizon ? 0 : star.opacity * 0.12
 
-    if (star.haloRadius > 0) {
+    if (showFieldHalos && star.haloRadius > 0) {
       ctx.globalAlpha = haloOpacity
       ctx.fillStyle = star.color
       ctx.beginPath()
@@ -187,6 +203,7 @@ function drawConstellations(
   constellations: SkyScene['visibleConstellations'],
   selectedSignKey: string,
   focus: SkyFocus,
+  constellationLabelMode: DrawSkySceneOptions['constellationLabelMode'],
 ): void {
   ctx.save()
   ctx.shadowBlur = 10
@@ -257,15 +274,17 @@ function drawConstellations(
         ctx.fill()
       })
 
-      ctx.setLineDash([])
-      ctx.shadowBlur = 0
-      ctx.globalAlpha = textOpacity
-      ctx.fillStyle = '#ffffff'
-      ctx.font = `${labelFontSize}px "Anonymous Pro"`
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'alphabetic'
-      ctx.fillText(labelText, labelX, labelY)
-      ctx.shadowBlur = 10
+      if (constellationLabelMode === 'all' || isSelected || isFocused) {
+        ctx.setLineDash([])
+        ctx.shadowBlur = 0
+        ctx.globalAlpha = textOpacity
+        ctx.fillStyle = '#ffffff'
+        ctx.font = `${labelFontSize}px "Anonymous Pro"`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'alphabetic'
+        ctx.fillText(labelText, labelX, labelY)
+        ctx.shadowBlur = 10
+      }
     },
   )
 
@@ -276,6 +295,7 @@ function drawReferenceStars(
   ctx: CanvasRenderingContext2D,
   stars: SkyScene['visibleReferenceStars'],
   focus: SkyFocus,
+  showReferenceLabels: boolean,
 ): void {
   ctx.save()
   ctx.textBaseline = 'alphabetic'
@@ -308,10 +328,12 @@ function drawReferenceStars(
     ctx.arc(star.x, star.y, 2.2, 0, Math.PI * 2)
     ctx.fill()
 
-    ctx.globalAlpha = isFocused ? 0.92 : opacity
-    ctx.fillStyle = star.color
-    ctx.font = `${star.labelFontSize}px "Anonymous Pro"`
-    ctx.fillText(star.name, star.labelX, star.labelY)
+    if (showReferenceLabels || isFocused) {
+      ctx.globalAlpha = isFocused ? 0.92 : opacity
+      ctx.fillStyle = star.color
+      ctx.font = `${star.labelFontSize}px "Anonymous Pro"`
+      ctx.fillText(star.name, star.labelX, star.labelY)
+    }
   })
 
   ctx.restore()

@@ -14,7 +14,6 @@ export type ProjectSeed = {
   slug: string
   title: string
   strapline: string
-  description: string
   repoHref?: string
   liveHref?: string
   liveLabel?: string

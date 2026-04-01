@@ -1,6 +1,5 @@
 import type { SkyFocus } from '@/lib/types'
 import type { SkyDetailsContent } from '@/lib/sky/details'
-import Image from 'next/image'
 
 type SkyDetailsDrawerProps = {
   details: SkyDetailsContent
@@ -11,18 +10,8 @@ export function SkyDetailsDrawer({ details, onSelectFocus }: SkyDetailsDrawerPro
   return (
     <div className="sky-details" id="sky-details" aria-live="polite">
       <div className="sky-details-stack">
-        <figure className="sky-portrait">
-          <div className="sky-portrait__media">
-            <Image
-              className={`sky-portrait__image sky-portrait__image--${details.imageFit ?? 'cover'}`}
-              src={details.imageSrc}
-              alt={details.imageAlt}
-              fill
-              sizes="(max-width: 780px) calc(100vw - 4rem), 22rem"
-              unoptimized={details.imageSrc.startsWith('data:')}
-            />
-          </div>
-          <figcaption className="sky-portrait__caption">
+        <div className="sky-portrait">
+          <div className="sky-portrait__caption">
             <p className="sky-portrait__eyebrow">{details.eyebrow}</p>
             <h3 className="sky-portrait__title">{details.title}</h3>
             <p className="sky-portrait__subtitle">{details.subtitle}</p>
@@ -48,40 +37,7 @@ export function SkyDetailsDrawer({ details, onSelectFocus }: SkyDetailsDrawerPro
                 ))}
               </div>
             ) : null}
-            {details.imageAttribution || details.imageLicenseName || details.imageSourceUrl ? (
-              <p className="sky-portrait__meta">
-                {details.imageAttribution ? (
-                  <span>{details.imageAttribution}</span>
-                ) : null}
-                {details.imageLicenseName ? (
-                  details.imageLicenseUrl ? (
-                    <a href={details.imageLicenseUrl} rel="noreferrer" target="_blank">
-                      {details.imageLicenseName}
-                    </a>
-                  ) : (
-                    <span>{details.imageLicenseName}</span>
-                  )
-                ) : null}
-                {details.imageSourceUrl ? (
-                  <a href={details.imageSourceUrl} rel="noreferrer" target="_blank">
-                    Source
-                  </a>
-                ) : null}
-              </p>
-            ) : null}
-          </figcaption>
-        </figure>
-
-        <div className="sky-facts">
-          {details.items.map((item) => (
-            <div
-              className={`sky-fact${item.wide ? ' sky-fact--wide' : ''}`}
-              key={`${item.label}-${item.value}`}
-            >
-              <p className="sky-fact__label">{item.label}</p>
-              <p className="sky-fact__value">{item.value}</p>
-            </div>
-          ))}
+          </div>
         </div>
       </div>
       <p className="sky-details__credit">

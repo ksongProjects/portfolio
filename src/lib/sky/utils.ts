@@ -15,8 +15,9 @@ export function projectSkyPosition(
   viewCenter: ViewCenter,
   width: number,
   height: number,
+  verticalViewAngle = VERTICAL_VIEW_ANGLE,
 ): ScreenPoint {
-  const projected = projectSkyPositionSafe(position, viewCenter, width, height)
+  const projected = projectSkyPositionSafe(position, viewCenter, width, height, verticalViewAngle)
 
   return projected ?? { x: Number.NaN, y: Number.NaN }
 }
@@ -26,22 +27,34 @@ export function projectAzimuthToX(
   centerAzimuth: number,
   width: number,
   height: number,
+  verticalViewAngle = VERTICAL_VIEW_ANGLE,
 ): number {
-  return projectSkyPosition({ azimuth, altitude: 0 }, { azimuth: centerAzimuth, altitude: 0 }, width, height).x
+  return projectSkyPosition(
+    { azimuth, altitude: 0 },
+    { azimuth: centerAzimuth, altitude: 0 },
+    width,
+    height,
+    verticalViewAngle,
+  ).x
 }
 
 export function projectAltitudeToY(
   altitude: number,
   centerAltitude: number,
   height: number,
+  verticalViewAngle = VERTICAL_VIEW_ANGLE,
 ): number {
-  return height / 2 - ((altitude - centerAltitude) / VERTICAL_VIEW_ANGLE) * height
+  return height / 2 - ((altitude - centerAltitude) / verticalViewAngle) * height
 }
 
-export function getHorizontalViewAngle(width: number, height: number): number {
+export function getHorizontalViewAngle(
+  width: number,
+  height: number,
+  verticalViewAngle = VERTICAL_VIEW_ANGLE,
+): number {
   const safeHeight = Math.max(height, 1)
   const aspectRatio = Math.max(width, 1) / safeHeight
-  const verticalRadians = degreesToRadians(VERTICAL_VIEW_ANGLE)
+  const verticalRadians = degreesToRadians(verticalViewAngle)
 
   return radiansToDegrees(2 * Math.atan(Math.tan(verticalRadians / 2) * aspectRatio))
 }
@@ -51,8 +64,15 @@ export function projectSkyPositionSafe(
   viewCenter: ViewCenter,
   width: number,
   height: number,
+  verticalViewAngle = VERTICAL_VIEW_ANGLE,
 ): ScreenPoint | null {
-  const projected = getProjectedSkyCoordinates(position, viewCenter, width, height)
+  const projected = getProjectedSkyCoordinates(
+    position,
+    viewCenter,
+    width,
+    height,
+    verticalViewAngle,
+  )
 
   if (!projected) {
     return null
@@ -74,8 +94,15 @@ export function projectSkyPositionToViewportEdge(
   width: number,
   height: number,
   inset = 18,
+  verticalViewAngle = VERTICAL_VIEW_ANGLE,
 ): ScreenPoint | null {
-  const projected = getProjectedSkyCoordinates(position, viewCenter, width, height)
+  const projected = getProjectedSkyCoordinates(
+    position,
+    viewCenter,
+    width,
+    height,
+    verticalViewAngle,
+  )
 
   if (!projected) {
     return null
@@ -250,6 +277,7 @@ function getProjectedSkyCoordinates(
   viewCenter: ViewCenter,
   width: number,
   height: number,
+  verticalViewAngle: number,
 ): ProjectedSkyCoordinates | null {
   const point = skyPositionToVector(position)
   const basis = getCameraBasis(viewCenter)
@@ -262,7 +290,7 @@ function getProjectedSkyCoordinates(
   }
 
   const aspectRatio = Math.max(width, 1) / Math.max(height, 1)
-  const tanHalfVertical = Math.tan(degreesToRadians(VERTICAL_VIEW_ANGLE) / 2)
+  const tanHalfVertical = Math.tan(degreesToRadians(verticalViewAngle) / 2)
   const tanHalfHorizontal = tanHalfVertical * aspectRatio
   const normalizedX = cameraX / (cameraZ * tanHalfHorizontal)
   const normalizedY = cameraY / (cameraZ * tanHalfVertical)

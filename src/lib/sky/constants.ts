@@ -4,6 +4,9 @@ export const DEFAULT_SIGN_KEY = 'scorpio'
 
 export const HORIZONTAL_VIEW_ANGLE = 150
 export const VERTICAL_VIEW_ANGLE = 100
+export const MIN_VERTICAL_VIEW_ANGLE = 42
+export const MAX_VERTICAL_VIEW_ANGLE = 120
+export const VIEW_ANGLE_STEP = 10
 export const SKY_GRID_INCREMENT = 10
 export const SKY_GRID_MAJOR_INCREMENT = 30
 export const SKY_GRID_VISIBILITY_MARGIN = 24

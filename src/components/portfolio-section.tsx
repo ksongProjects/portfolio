@@ -1,6 +1,7 @@
 import { GitBranch, Globe } from 'lucide-react'
 import { forwardRef } from 'react'
 import type { Profile, Project, SocialLink } from '@/lib/types'
+import { SectionMobileNav } from './site-nav'
 
 type PortfolioSectionProps = {
   profile: Profile
@@ -10,16 +11,10 @@ type PortfolioSectionProps = {
 
 export const PortfolioSection = forwardRef<HTMLElement, PortfolioSectionProps>(
   function PortfolioSection({ profile, socialLinks, projects }, ref) {
-    const liveProjects = projects.filter((project) => project.liveHref)
-    const otherProjects = projects.filter((project) => !project.liveHref)
-
     return (
       <section className="portfolio" id="portfolio" ref={ref}>
         <div className="portfolio__inner">
-          <header className="section-head section-head--portfolio">
-            <p className="section-marker">01 / Portfolio</p>
-          </header>
-
+          <SectionMobileNav currentSection="portfolio" />
           <div className="monograph-layout">
             <div className="monograph-intro">
               <h2>{profile.name}</h2>
@@ -36,32 +31,15 @@ export const PortfolioSection = forwardRef<HTMLElement, PortfolioSectionProps>(
             </div>
 
             <div className="monograph-list">
-              {liveProjects.length > 0 ? (
-                <div className="project-group">
+              {projects.length > 0 ? (
+                <>
                   <div className="project-group__header">
-                    <p className="project-group__eyebrow">Live sites</p>
-                    <p className="project-group__copy">
-                      Deployed apps with a public repo and a working website.
-                    </p>
+                    <p className="project-group__eyebrow">Projects</p>
                   </div>
-                  {liveProjects.map((project) => (
+                  {projects.map((project) => (
                     <ProjectRow key={project.slug} project={project} />
                   ))}
-                </div>
-              ) : null}
-
-              {otherProjects.length > 0 ? (
-                <div className="project-group">
-                  <div className="project-group__header">
-                    <p className="project-group__eyebrow">More builds</p>
-                    <p className="project-group__copy">
-                      Tools, prototypes, and practice environments still in progress.
-                    </p>
-                  </div>
-                  {otherProjects.map((project) => (
-                    <ProjectRow key={project.slug} project={project} />
-                  ))}
-                </div>
+                </>
               ) : null}
             </div>
           </div>
@@ -85,7 +63,6 @@ function ProjectRow({ project }: { project: Project }) {
             ))}
           </ul>
         ) : null}
-        <p className="mono-row__copy">{project.description}</p>
       </div>
       {project.repoHref || project.liveHref ? (
         <p className="mono-row__links">

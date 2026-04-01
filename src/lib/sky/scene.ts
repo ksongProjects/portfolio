@@ -19,6 +19,14 @@ import {
   projectSkyPositionToViewportEdge,
 } from './utils'
 
+type BuildSkyViewportSceneOptions = {
+  maxFieldStars?: number
+  maxReferenceStars?: number
+  edgeInterpolationSteps?: number
+  showGuides?: boolean
+  verticalViewAngle?: number
+}
+
 export function buildSkyViewportScene(
   positions: SkySnapshot['allPositions'],
   fieldStarPositions: SkySnapshot['fieldStarPositions'],
@@ -26,11 +34,25 @@ export function buildSkyViewportScene(
   viewCenter: ViewCenter,
   width: number,
   height: number,
+  options: BuildSkyViewportSceneOptions = {},
 ): SkyScene {
+  const {
+    maxFieldStars = Number.POSITIVE_INFINITY,
+    maxReferenceStars = 10,
+    edgeInterpolationSteps = 12,
+    showGuides = true,
+    verticalViewAngle,
+  } = options
   const viewportMargin = 24
   const visibleFieldStars = fieldStarPositions
     .map((star) => {
-      const projected = projectSkyPositionSafe(star.position, viewCenter, width, height)
+      const projected = projectSkyPositionSafe(
+        star.position,
+        viewCenter,
+        width,
+        height,
+        verticalViewAngle,
+      )
       const visuals = getSkyFieldVisuals(star.magnitude)
 
       return {
@@ -50,13 +72,21 @@ export function buildSkyViewportScene(
       }
     })
     .filter((star) => star.visible)
+    .sort((first, second) => first.magnitude - second.magnitude)
+    .slice(0, maxFieldStars)
     .sort((first, second) => second.magnitude - first.magnitude)
 
   const visibleConstellations = positions
     .map(({ sign, position, stars }) => {
-      const center = projectSkyPositionSafe(position, viewCenter, width, height)
+      const center = projectSkyPositionSafe(position, viewCenter, width, height, verticalViewAngle)
       const projected = stars.map((star) => {
-        const projectedStar = projectSkyPositionSafe(star.position, viewCenter, width, height)
+        const projectedStar = projectSkyPositionSafe(
+          star.position,
+          viewCenter,
+          width,
+          height,
+          verticalViewAngle,
+        )
 
         return {
           ...star,
@@ -80,10 +110,11 @@ export function buildSkyViewportScene(
           }
 
           return projectSkyPolyline(
-            interpolateSkyPositions(firstPosition, secondPosition, 12),
+            interpolateSkyPositions(firstPosition, secondPosition, edgeInterpolationSteps),
             viewCenter,
             width,
             height,
+            verticalViewAngle,
           ).map((points) => ({
             startIndex,
             endIndex,
@@ -145,7 +176,13 @@ export function buildSkyViewportScene(
 
   const visibleReferenceStars = referencePositions
     .map((star) => {
-      const projected = projectSkyPositionSafe(star.position, viewCenter, width, height)
+      const projected = projectSkyPositionSafe(
+        star.position,
+        viewCenter,
+        width,
+        height,
+        verticalViewAngle,
+      )
 
       return {
         ...star,
@@ -165,67 +202,75 @@ export function buildSkyViewportScene(
     })
     .filter((star) => star.visible)
     .sort((first, second) => second.priority - first.priority)
-    .slice(0, 10)
+    .slice(0, maxReferenceStars)
 
-  const altitudeGuides = Array.from(
-    { length: Math.floor(180 / SKY_GRID_INCREMENT) + 1 },
-    (_, index) => -90 + index * SKY_GRID_INCREMENT,
-  )
-    .filter((altitude) => altitude !== 0)
-    .map((altitude) => {
-      const paths = projectSkyPolyline(
-        sampleAltitudeGuide(altitude, viewCenter.azimuth),
-        viewCenter,
-        width,
-        height,
+  const altitudeGuides = showGuides
+    ? Array.from(
+        { length: Math.floor(180 / SKY_GRID_INCREMENT) + 1 },
+        (_, index) => -90 + index * SKY_GRID_INCREMENT,
       )
+        .filter((altitude) => altitude !== 0)
+        .map((altitude) => {
+          const paths = projectSkyPolyline(
+            sampleAltitudeGuide(altitude, viewCenter.azimuth),
+            viewCenter,
+            width,
+            height,
+            verticalViewAngle,
+          )
 
-      return {
-        altitude,
-        major: Math.abs(altitude) % SKY_GRID_MAJOR_INCREMENT === 0,
-        label: `${altitude > 0 ? '+' : ''}${altitude}\u00B0`,
-        paths,
-        labelPoint: getGuideLabelPoint(paths, 'left', width, height),
-      }
-    })
-    .filter(({ paths }) => paths.length > 0)
+          return {
+            altitude,
+            major: Math.abs(altitude) % SKY_GRID_MAJOR_INCREMENT === 0,
+            label: `${altitude > 0 ? '+' : ''}${altitude}\u00B0`,
+            paths,
+            labelPoint: getGuideLabelPoint(paths, 'left', width, height),
+          }
+        })
+        .filter(({ paths }) => paths.length > 0)
+    : []
 
-  const azimuthGuides = Array.from(
-    { length: Math.floor(360 / SKY_GRID_INCREMENT) },
-    (_, index) => index * SKY_GRID_INCREMENT,
-  )
-    .map((azimuth) => {
-      const paths = projectSkyPolyline(
-        sampleAzimuthGuide(azimuth),
-        viewCenter,
-        width,
-        height,
+  const azimuthGuides = showGuides
+    ? Array.from(
+        { length: Math.floor(360 / SKY_GRID_INCREMENT) },
+        (_, index) => index * SKY_GRID_INCREMENT,
       )
+        .map((azimuth) => {
+          const paths = projectSkyPolyline(
+            sampleAzimuthGuide(azimuth),
+            viewCenter,
+            width,
+            height,
+            verticalViewAngle,
+          )
 
-      return {
-        azimuth,
-        major: azimuth % SKY_GRID_MAJOR_INCREMENT === 0,
-        label: `${formatCompassLabel(azimuth)} ${azimuth}\u00B0`,
-        paths,
-        labelPoint:
-          azimuth % SKY_GRID_MAJOR_INCREMENT === 0
-            ? projectSkyPositionToViewportEdge(
-                { azimuth, altitude: 0 },
-                viewCenter,
-                width,
-                height,
-                18,
-              )
-            : null,
-      }
-    })
-    .filter(({ paths }) => paths.length > 0)
+          return {
+            azimuth,
+            major: azimuth % SKY_GRID_MAJOR_INCREMENT === 0,
+            label: `${formatCompassLabel(azimuth)} ${azimuth}\u00B0`,
+            paths,
+            labelPoint:
+              azimuth % SKY_GRID_MAJOR_INCREMENT === 0
+                ? projectSkyPositionToViewportEdge(
+                    { azimuth, altitude: 0 },
+                    viewCenter,
+                    width,
+                    height,
+                    18,
+                    verticalViewAngle,
+                  )
+                : null,
+          }
+        })
+        .filter(({ paths }) => paths.length > 0)
+    : []
 
   const horizonPaths = projectSkyPolyline(
     sampleAltitudeGuide(0, viewCenter.azimuth),
     viewCenter,
     width,
     height,
+    verticalViewAngle,
   )
 
   return {
@@ -322,6 +367,7 @@ function projectSkyPolyline(
   viewCenter: ViewCenter,
   width: number,
   height: number,
+  verticalViewAngle?: number,
 ): ScreenPoint[][] {
   const paths: ScreenPoint[][] = []
   let current: ScreenPoint[] = []
@@ -329,7 +375,7 @@ function projectSkyPolyline(
   const jumpThreshold = Math.max(width, height) * 1.25
 
   samples.forEach((sample) => {
-    const projected = projectSkyPositionSafe(sample, viewCenter, width, height)
+    const projected = projectSkyPositionSafe(sample, viewCenter, width, height, verticalViewAngle)
 
     if (!projected) {
       if (current.length > 1) {

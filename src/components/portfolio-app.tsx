@@ -76,7 +76,6 @@ export function PortfolioApp({
             ref={starsRef}
             dataset={skyDataset}
             initialNowIso={initialNowIso}
-            isActive={activeSection === 'stars'}
           />
         ) : (
           <NightSkySetupSection ref={starsRef} />
