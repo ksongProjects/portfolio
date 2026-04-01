@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { Anonymous_Pro } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import './globals.css'
 
 const anonymousPro = Anonymous_Pro({
@@ -22,6 +24,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={anonymousPro.variable}>
+      <Analytics />
+      <SpeedInsights />
       <body>{children}</body>
     </html>
   )

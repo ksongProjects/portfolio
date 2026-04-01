@@ -13,6 +13,8 @@
     "sky:sync-popular": "node --env-file=.env --import tsx src/server/sky/sync-popular-cli.ts"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "astronomy-engine": "^2.1.19",
     "lucide-react": "^1.7.0",
     "next": "16.2.1",
@@ -25,6 +27,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "supabase": "^2.84.5",
