@@ -1,4 +1,5 @@
 import type { SkyFocus, ZodiacSign } from '@/lib/types'
+import { anonymousProFontFamily } from '@/lib/fonts'
 import { DEFAULT_SIGN_KEY } from './constants'
 import type { SkySnapshot } from './types'
 import { formatAltitudeLabel, formatCompassLabel, shortestAngleDelta } from './utils'
@@ -34,6 +35,8 @@ export type SkyDetailsContent = {
     focus: SkyFocus
   }>
 }
+
+const skyPortraitFontFamily = anonymousProFontFamily
 
 export function getSkyDetailsContent(
   focus: SkyFocus,
@@ -192,12 +195,12 @@ export function createConstellationPortrait(sign: ZodiacSign): string {
           )
           .join('')}
       </g>
-      <text x="112" y="148" fill="#E8F0FF" fill-opacity="0.76" font-family="Anonymous Pro, monospace" font-size="24" letter-spacing="2.6">CONSTELLATION</text>
-      <text x="112" y="356" fill="#F7FAFF" font-family="Anonymous Pro, monospace" font-size="64" letter-spacing="-1.2">${sign.name}</text>
-      <text x="112" y="396" fill="#E8F0FF" fill-opacity="0.7" font-family="Anonymous Pro, monospace" font-size="24" letter-spacing="1.8">${(sign.metaValue ?? sign.dates).toUpperCase()}</text>
+      <text x="112" y="148" fill="#E8F0FF" fill-opacity="0.76" font-family='${skyPortraitFontFamily}' font-size="24" letter-spacing="2.6">CONSTELLATION</text>
+      <text x="112" y="356" fill="#F7FAFF" font-family='${skyPortraitFontFamily}' font-size="64" letter-spacing="-1.2">${sign.name}</text>
+      <text x="112" y="396" fill="#E8F0FF" fill-opacity="0.7" font-family='${skyPortraitFontFamily}' font-size="24" letter-spacing="1.8">${(sign.metaValue ?? sign.dates).toUpperCase()}</text>
       ${
         sign.symbol
-          ? `<text x="112" y="242" fill="${sign.accent}" fill-opacity="0.88" font-family="Anonymous Pro, monospace" font-size="64" letter-spacing="-1.6">${sign.symbol}</text>`
+          ? `<text x="112" y="242" fill="${sign.accent}" fill-opacity="0.88" font-family='${skyPortraitFontFamily}' font-size="64" letter-spacing="-1.6">${sign.symbol}</text>`
           : ''
       }
     </svg>
@@ -399,9 +402,9 @@ export function createStarPortrait(input: {
       <circle cx="660" cy="206" r="118" stroke="${input.color}" stroke-opacity="0.28" />
       <path d="M112 418h736" stroke="#ffffff" stroke-opacity="0.12" />
       <path d="M112 466h536" stroke="#ffffff" stroke-opacity="0.08" />
-      <text x="112" y="148" fill="#E8F0FF" fill-opacity="0.76" font-family="Anonymous Pro, monospace" font-size="24" letter-spacing="2.6">STAR PORTRAIT</text>
-      <text x="112" y="356" fill="#F7FAFF" font-family="Anonymous Pro, monospace" font-size="64" letter-spacing="-1.2">${input.name}</text>
-      <text x="112" y="396" fill="#E8F0FF" fill-opacity="0.7" font-family="Anonymous Pro, monospace" font-size="24" letter-spacing="1.8">${input.subtitle.toUpperCase()}</text>
+      <text x="112" y="148" fill="#E8F0FF" fill-opacity="0.76" font-family='${skyPortraitFontFamily}' font-size="24" letter-spacing="2.6">STAR PORTRAIT</text>
+      <text x="112" y="356" fill="#F7FAFF" font-family='${skyPortraitFontFamily}' font-size="64" letter-spacing="-1.2">${input.name}</text>
+      <text x="112" y="396" fill="#E8F0FF" fill-opacity="0.7" font-family='${skyPortraitFontFamily}' font-size="24" letter-spacing="1.8">${input.subtitle.toUpperCase()}</text>
     </svg>
   `
 

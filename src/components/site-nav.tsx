@@ -57,10 +57,6 @@ export function SectionMobileNav({ currentSection }: { currentSection: SectionKe
   const activeItem = navItems.find((item) => item.key === currentSection) ?? navItems[0]
 
   useEffect(() => {
-    setIsOpen(false)
-  }, [currentSection])
-
-  useEffect(() => {
     if (!isOpen) {
       return
     }

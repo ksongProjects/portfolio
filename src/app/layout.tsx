@@ -1,15 +1,8 @@
 import type { Metadata } from 'next'
-import { Anonymous_Pro } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { anonymousPro } from '@/lib/fonts'
 import './globals.css'
-
-const anonymousPro = Anonymous_Pro({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  display: 'swap',
-  variable: '--font-mono',
-})
 
 export const metadata: Metadata = {
   title: 'Kyung Min Song | Portfolio & Night Sky',
@@ -23,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={anonymousPro.variable}>
+    <html lang="en" className={`${anonymousPro.variable} ${anonymousPro.className}`}>
       <Analytics />
       <SpeedInsights />
       <body>{children}</body>

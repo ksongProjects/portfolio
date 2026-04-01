@@ -1,4 +1,5 @@
 import type { SkyFocus } from '@/lib/types'
+import { anonymousProFontFamily } from '@/lib/fonts'
 import type { SkyScene, SkySurface } from './types'
 
 type DrawSkySceneOptions = {
@@ -106,7 +107,7 @@ function drawSkyGuideOverlay(
 ): void {
   ctx.save()
   ctx.globalAlpha = 0.72
-  ctx.font = '12px "Anonymous Pro"'
+  ctx.font = `12px ${anonymousProFontFamily}`
   ctx.textBaseline = 'alphabetic'
 
   scene.altitudeGuides.forEach(({ altitude, label, paths, labelPoint, major }) => {
@@ -279,7 +280,7 @@ function drawConstellations(
         ctx.shadowBlur = 0
         ctx.globalAlpha = textOpacity
         ctx.fillStyle = '#ffffff'
-        ctx.font = `${labelFontSize}px "Anonymous Pro"`
+        ctx.font = `${labelFontSize}px ${anonymousProFontFamily}`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'alphabetic'
         ctx.fillText(labelText, labelX, labelY)
@@ -331,7 +332,7 @@ function drawReferenceStars(
     if (showReferenceLabels || isFocused) {
       ctx.globalAlpha = isFocused ? 0.92 : opacity
       ctx.fillStyle = star.color
-      ctx.font = `${star.labelFontSize}px "Anonymous Pro"`
+      ctx.font = `${star.labelFontSize}px ${anonymousProFontFamily}`
       ctx.fillText(star.name, star.labelX, star.labelY)
     }
   })
@@ -404,7 +405,7 @@ function drawHorizon(
 
   if (scene.horizon.labelPoint) {
     ctx.fillStyle = 'rgba(255,255,255,0.72)'
-    ctx.font = '12px "Anonymous Pro"'
+    ctx.font = `12px ${anonymousProFontFamily}`
     ctx.textAlign = 'right'
     ctx.textBaseline = 'alphabetic'
     ctx.fillText('horizon / 0 deg', scene.horizon.labelPoint.x - 10, scene.horizon.labelPoint.y - 10)
