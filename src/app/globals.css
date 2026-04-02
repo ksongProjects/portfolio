@@ -624,6 +624,24 @@ code {
   text-transform: uppercase;
 }
 
+.mono-row__repo-activity {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+  align-items: center;
+  width: fit-content;
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(220, 230, 255, 0.48);
+}
+
+.mono-row__repo-activity strong {
+  color: rgba(238, 244, 255, 0.8);
+  font-weight: 500;
+}
+
 .mono-row__stack {
   display: flex;
   flex-wrap: wrap;

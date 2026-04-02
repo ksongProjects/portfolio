@@ -49,13 +49,40 @@ export const PortfolioSection = forwardRef<HTMLElement, PortfolioSectionProps>(
   },
 )
 
+const repoActivityDateFormatter = new Intl.DateTimeFormat('en', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'UTC',
+})
+
+function formatRepoActivityDate(iso: string) {
+  const value = new Date(iso)
+
+  if (Number.isNaN(value.getTime())) {
+    return null
+  }
+
+  return repoActivityDateFormatter.format(value)
+}
+
 function ProjectRow({ project }: { project: Project }) {
+  const repoActivityDate = project.repoActivity
+    ? formatRepoActivityDate(project.repoActivity.iso)
+    : null
+
   return (
     <article className="mono-row">
       <p className="mono-row__index">{project.index}</p>
       <div className="mono-row__body">
         <h3>{project.title}</h3>
         <p className="mono-row__strap">{project.strapline}</p>
+        {project.repoActivity && repoActivityDate ? (
+          <p className="mono-row__repo-activity">
+            <span>{project.repoActivity.label}</span>
+            <strong>{repoActivityDate}</strong>
+          </p>
+        ) : null}
         {project.techStack?.length ? (
           <ul className="mono-row__stack" aria-label={`${project.title} tech stack`}>
             {project.techStack.map((item) => (

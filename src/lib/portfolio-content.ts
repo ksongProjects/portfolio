@@ -1,4 +1,4 @@
-import type { Profile, Project, ProjectSeed, SocialLink } from "./types";
+import type { Profile, Project, ProjectSeed, RepoActivity, SocialLink } from "./types";
 
 export const profile: Profile = {
   name: "Kyung Min Song",
@@ -84,9 +84,14 @@ const orderedProjectSeeds = [
   ...projectSeeds.filter((project) => !project.liveHref),
 ];
 
-export const projects: Project[] = orderedProjectSeeds.map(
-  (project, index) => ({
+export function buildProjects(
+  repoActivityBySlug: Record<string, RepoActivity | null> = {},
+): Project[] {
+  return orderedProjectSeeds.map((project, index) => ({
     ...project,
     index: String(index + 1).padStart(2, "0"),
-  }),
-);
+    repoActivity: repoActivityBySlug[project.slug] ?? null,
+  }));
+}
+
+export const projects: Project[] = buildProjects();

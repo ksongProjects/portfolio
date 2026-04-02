@@ -22,8 +22,14 @@ export type ProjectSeed = {
   accent: string
 }
 
+export type RepoActivity = {
+  label: 'Last active' | 'Last updated'
+  iso: string
+}
+
 export type Project = ProjectSeed & {
   index: string
+  repoActivity?: RepoActivity | null
 }
 
 export type SkyCatalogStar = {

@@ -1,11 +1,15 @@
 import { PortfolioApp } from '@/components/portfolio-app'
-import { profile, projects, socialLinks } from '@/lib/portfolio-content'
+import { profile, socialLinks } from '@/lib/portfolio-content'
+import { getProjectsWithRepoActivity } from '@/server/github/repository'
 import { maybeEnsureSkyDataset } from '@/server/sky/repository'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
-  const skyDataset = await maybeEnsureSkyDataset()
+  const [skyDataset, projects] = await Promise.all([
+    maybeEnsureSkyDataset(),
+    getProjectsWithRepoActivity(),
+  ])
 
   return (
     <PortfolioApp
