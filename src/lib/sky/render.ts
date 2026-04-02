@@ -319,16 +319,46 @@ function drawMoon(
   ctx.arc(moon.x, moon.y, radius, 0, Math.PI * 2)
   ctx.stroke()
 
-  if (!isBelowHorizon) {
-    ctx.globalAlpha = 0.76
-    ctx.fillStyle = 'rgba(255,255,255,0.9)'
-    ctx.font = `${moon.labelFontSize}px ${anonymousProFontFamily}`
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'alphabetic'
-    ctx.fillText('Moon', moon.labelX, moon.labelY)
-  }
+  ctx.globalAlpha = isBelowHorizon ? 0.4 : 0.84
+  ctx.fillStyle = 'rgba(255,255,255,0.92)'
+  ctx.font = `${moon.labelFontSize}px ${anonymousProFontFamily}`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic'
+  ctx.fillText(`Moon (${formatMoonPhaseLabel(moon.phaseDegrees)})`, moon.labelX, moon.labelY)
 
   ctx.restore()
+}
+
+function formatMoonPhaseLabel(phaseDegrees: number): string {
+  if (phaseDegrees < 22.5 || phaseDegrees >= 337.5) {
+    return 'new'
+  }
+
+  if (phaseDegrees < 67.5) {
+    return 'waxing crescent'
+  }
+
+  if (phaseDegrees < 112.5) {
+    return 'first quarter'
+  }
+
+  if (phaseDegrees < 157.5) {
+    return 'waxing gibbous'
+  }
+
+  if (phaseDegrees < 202.5) {
+    return 'full'
+  }
+
+  if (phaseDegrees < 247.5) {
+    return 'waning gibbous'
+  }
+
+  if (phaseDegrees < 292.5) {
+    return 'last quarter'
+  }
+
+  return 'waning crescent'
 }
 
 function drawConstellations(
