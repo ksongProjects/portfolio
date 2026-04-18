@@ -10,24 +10,18 @@ export type Profile = {
   intro: string
 }
 
-export type ProjectSeed = {
-  slug: string
-  title: string
-  strapline: string
-  repoHref?: string
-  liveHref?: string
-  liveLabel?: string
-  techStack?: string[]
-  palette: [string, string]
-  accent: string
-}
-
 export type RepoActivity = {
   label: 'Last active' | 'Last updated'
   iso: string
 }
 
-export type Project = ProjectSeed & {
+export type Project = {
+  slug: string
+  title: string
+  strapline: string
+  repoHref?: string
+  liveHref?: string
+  techStack?: string[]
   index: string
   repoActivity?: RepoActivity | null
 }

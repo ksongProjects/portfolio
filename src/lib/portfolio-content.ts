@@ -1,4 +1,4 @@
-import type { Profile, Project, ProjectSeed, RepoActivity, SocialLink } from "./types";
+import type { Profile, SocialLink } from "./types";
 
 export const profile: Profile = {
   name: "Kyung Min Song",
@@ -18,80 +18,3 @@ export const socialLinks: SocialLink[] = [
     handle: "linkedin.com/in/kmsong",
   },
 ];
-
-export const projectSeeds: ProjectSeed[] = [
-  {
-    slug: "outfitsme",
-    title: "OutfitsMe",
-    strapline: "AI outfit analysis and custom outfits builder",
-    repoHref: "https://github.com/ksongProjects/outfitsme",
-    liveHref: "https://outfitsme.com",
-    liveLabel: "website",
-    techStack: [
-      "Next.js",
-      "Flask",
-      "Supabase",
-      "Gemini",
-      "AWS",
-      "Terraform",
-      "Docker",
-    ],
-    palette: ["#f7e0d0", "#efb06d"],
-    accent: "#be5929",
-  },
-  {
-    slug: "collapse-game",
-    title: "Collapse Game",
-    strapline: "Timed puzzle game with leaderboards",
-    repoHref: "https://github.com/ksongProjects/collapse",
-    liveHref: "https://collapsegame.dev",
-    liveLabel: "website",
-    techStack: ["Next.js", "MongoDB Atlas", "Vercel"],
-    palette: ["#f8d977", "#f07167"],
-    accent: "#f05d5e",
-  },
-  {
-    slug: "blackjack",
-    title: "Blackjack Simulator",
-    strapline: "Blackjack strategy sandbox",
-    repoHref: "https://github.com/ksongProjects/cards",
-    techStack: ["Godot 4", "GDScript"],
-    palette: ["#0d2017", "#206a43"],
-    accent: "#edd697",
-  },
-  {
-    slug: "factory",
-    title: "Financial Data Factory",
-    strapline: "Financial data pipeline tooling",
-    repoHref: "https://github.com/ksongProjects/findf",
-    techStack: ["Next.js", "FastAPI", "Polars", "DuckDB"],
-    palette: ["#dbe9ff", "#8eb5fc"],
-    accent: "#2559d8",
-  },
-  {
-    slug: "quant",
-    title: "Quant Analyst Trainer",
-    strapline: "Local-first quant research platform",
-    repoHref: "https://github.com/ksongProjects/modeltrainer",
-    techStack: ["Python", "React", "Vite", "SQLite"],
-    palette: ["#ece4ff", "#b9a0fc"],
-    accent: "#6147cb",
-  },
-];
-
-const orderedProjectSeeds = [
-  ...projectSeeds.filter((project) => project.liveHref),
-  ...projectSeeds.filter((project) => !project.liveHref),
-];
-
-export function buildProjects(
-  repoActivityBySlug: Record<string, RepoActivity | null> = {},
-): Project[] {
-  return orderedProjectSeeds.map((project, index) => ({
-    ...project,
-    index: String(index + 1).padStart(2, "0"),
-    repoActivity: repoActivityBySlug[project.slug] ?? null,
-  }));
-}
-
-export const projects: Project[] = buildProjects();
