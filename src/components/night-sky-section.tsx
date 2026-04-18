@@ -3,10 +3,10 @@
 import { forwardRef, useEffect, useEffectEvent, useRef, useState } from 'react'
 import {
   DEFAULT_SIGN_KEY,
-  FALLBACK_LOCATION,
   MAX_VERTICAL_VIEW_ANGLE,
   MIN_VERTICAL_VIEW_ANGLE,
   SKY_STORAGE_KEYS,
+  VANCOUVER_LOCATION,
   VERTICAL_VIEW_ANGLE,
   VIEW_ANGLE_STEP,
 } from '@/lib/sky/constants'
@@ -27,7 +27,7 @@ import {
   shortestAngleDelta,
   writeStorage,
 } from '@/lib/sky/utils'
-import type { AppLocation, SkyDataset, SkyFocus } from '@/lib/types'
+import type { SkyDataset, SkyFocus } from '@/lib/types'
 import { SkyDetailsDrawer } from './sky-details-drawer'
 import { SectionMobileNav } from './site-nav'
 
@@ -122,7 +122,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       dataset.allConstellations,
       dataset.fieldStars,
       dataset.referenceStars,
-      FALLBACK_LOCATION,
+      VANCOUVER_LOCATION,
       initialNow,
     )
 
@@ -145,7 +145,6 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       kind: 'sign',
       signKey: initialSign.key,
     })
-    const [location, setLocation] = useState<AppLocation>(FALLBACK_LOCATION)
     const [now, setNow] = useState(initialNow)
     const [snapshot, setSnapshot] = useState(initialSnapshot)
     const [isDetailsOpen, setIsDetailsOpen] = useState(true)
@@ -402,7 +401,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         dataset.allConstellations,
         dataset.fieldStars,
         dataset.referenceStars,
-        location,
+        VANCOUVER_LOCATION,
         now,
       )
 
@@ -497,7 +496,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       const shouldRecenter = recenterNextSnapshotRef.current || !viewCenterRef.current
       recenterNextSnapshotRef.current = false
       syncSnapshot(shouldRecenter)
-    }, [location, selectedSignKey])
+    }, [selectedSignKey])
 
     useEffect(() => {
       syncSnapshot(false)
@@ -707,36 +706,6 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         canvas.removeEventListener('pointerleave', handlePointerLeave)
       }
     }, [isCoarsePointer])
-
-    useEffect(() => {
-      if (!('geolocation' in navigator)) {
-        return
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          recenterNextSnapshotRef.current = true
-          setLocation({
-            label: 'Current location',
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            timezone:
-              Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_LOCATION.timezone,
-            source: 'geolocation',
-            detail: 'Using browser geolocation for the night sky.',
-          })
-        },
-        () => {
-          recenterNextSnapshotRef.current = true
-          setLocation(FALLBACK_LOCATION)
-        },
-        {
-          enableHighAccuracy: false,
-          timeout: 6000,
-          maximumAge: 15 * 60 * 1000,
-        },
-      )
-    }, [])
 
     useEffect(() => {
       const timer = window.setInterval(() => {

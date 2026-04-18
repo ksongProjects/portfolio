@@ -18,11 +18,9 @@ export const SKY_STORAGE_KEYS = {
   guide: 'portfolio-sky-guide',
 } as const
 
-export const FALLBACK_LOCATION: AppLocation = {
+export const VANCOUVER_LOCATION: AppLocation = {
   label: 'Vancouver, BC, Canada',
   latitude: 49.2827,
   longitude: -123.1207,
   timezone: 'America/Vancouver',
-  source: 'fallback',
-  detail: 'Using Vancouver because location access was not available.',
 }

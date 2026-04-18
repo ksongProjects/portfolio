@@ -92,8 +92,6 @@ export type AppLocation = {
   latitude: number
   longitude: number
   timezone: string
-  source: 'fallback' | 'geolocation'
-  detail: string
 }
 
 export type ConstellationPosition = {

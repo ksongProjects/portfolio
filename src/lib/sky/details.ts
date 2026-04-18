@@ -216,11 +216,11 @@ function getVisibilityLabel(altitude: number): string {
 function getVisibilityBadge(altitude: number): SkyVisibilityBadge {
   return altitude > 0
     ? {
-        label: 'Visible from your location',
+        label: 'Visible from Vancouver',
         tone: 'visible',
       }
     : {
-        label: 'Not visible from your location',
+        label: 'Not visible from Vancouver',
         tone: 'hidden',
       }
 }
