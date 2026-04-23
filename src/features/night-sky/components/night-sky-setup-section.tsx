@@ -8,7 +8,7 @@ export const NightSkySetupSection = forwardRef<HTMLElement>(function NightSkySet
       <div className="stars-demo__inner">
         <PageMobileNav />
         <div className="stars-layout">
-          <Card className="sky-setup rounded-none bg-transparent py-0 text-inherit shadow-none ring-0">
+          <Card className="sky-setup">
             <p className="sky-setup__eyebrow">Database setup required</p>
             <h3>Connect Supabase to load the live sky catalog.</h3>
             <p>

@@ -104,7 +104,6 @@ code {
 
 .section-marker,
 .mono-row__index,
-.sky-fact__label,
 .zodiac-rail__label {
   font-family: var(--mono);
   font-size: 0.75rem;
@@ -462,6 +461,11 @@ code {
 
 .sky-loading-card {
   min-height: 100%;
+  padding-block: 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: none;
 }
 
 .sky-loading-facts {
@@ -972,12 +976,7 @@ code {
 }
 
 .section-head--stars .section-marker,
-.section-head--stars h2,
-.sky-stage__status,
-.sky-fact__label,
-.sky-fact__value,
-.zodiac-list button span,
-.zodiac-list button strong {
+.section-head--stars h2 {
   color: inherit;
 }
 
@@ -990,10 +989,6 @@ code {
   height: 100%;
 }
 
-.stars-layout[data-details-open='true'] {
-  grid-template-columns: minmax(0, 4fr) minmax(0, 1fr);
-}
-
 .sky-stage {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -1003,7 +998,9 @@ code {
   padding: 1rem;
   border: 1px solid rgba(151, 178, 242, 0.18);
   border-radius: 0;
+  color: inherit;
   background: rgba(255, 255, 255, 0.025);
+  box-shadow: none;
 }
 
 .sky-stage__header {
@@ -1020,20 +1017,8 @@ code {
   width: 100%;
 }
 
-.sky-stage__toggles {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  gap: 0.85rem;
-}
-
-.sky-fact__label {
-  color: rgba(255, 255, 255, 0.62);
-}
-
 .sky-stage__status,
-.zodiac-list button span,
-.sky-fact__value {
+.sky-zodiac-button span {
   color: var(--sky-muted);
 }
 
@@ -1054,9 +1039,11 @@ code {
   padding: clamp(1.4rem, 3vw, 2.4rem);
   border: 1px solid rgba(151, 178, 242, 0.18);
   border-radius: 0;
+  color: inherit;
   background:
     radial-gradient(circle at 78% 22%, rgba(165, 186, 255, 0.14), transparent 24%),
     linear-gradient(180deg, rgba(9, 18, 33, 0.92), rgba(13, 25, 46, 0.95));
+  box-shadow: none;
 }
 
 .sky-setup__eyebrow,
@@ -1089,19 +1076,6 @@ code {
   gap: 0.6rem;
   padding-left: 1.2rem;
   color: var(--sky-muted);
-}
-
-.sky-tool-toggle {
-  border: 0;
-  padding: 0.25rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.32);
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font-family: var(--mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 .sky-canvas {
@@ -1181,11 +1155,11 @@ code {
   cursor: default;
 }
 
-.sky-canvas-visibility,
 .sky-portrait__visibility-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  height: auto;
   width: fit-content;
   max-width: 100%;
   padding: 0.34rem 0.58rem;
@@ -1195,9 +1169,9 @@ code {
   font-size: 0.52rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  overflow: visible;
 }
 
-.sky-canvas-visibility::before,
 .sky-portrait__visibility-badge::before {
   content: '';
   width: 0.4rem;
@@ -1207,24 +1181,12 @@ code {
   box-shadow: 0 0 10px currentColor;
 }
 
-.sky-canvas-visibility {
-  position: absolute;
-  top: 0.9rem;
-  left: 0.9rem;
-  z-index: 1;
-  pointer-events: none;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 24px rgba(1, 6, 18, 0.18);
-}
-
-.sky-canvas-visibility--visible,
 .sky-portrait__visibility-badge--visible {
   color: #8ef0b8;
   border-color: rgba(102, 219, 149, 0.34);
   background: rgba(10, 42, 24, 0.72);
 }
 
-.sky-canvas-visibility--hidden,
 .sky-portrait__visibility-badge--hidden {
   color: #f1bf86;
   border-color: rgba(235, 169, 95, 0.3);
@@ -1266,29 +1228,9 @@ code {
   gap: 0.75rem;
   padding: 0.15rem;
   border: 1px solid rgba(151, 178, 242, 0.16);
+  color: inherit;
   background: rgba(255, 255, 255, 0.025);
-}
-
-.sky-portrait__media {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 12 / 7;
-  overflow: hidden;
-  border: 1px solid rgba(151, 178, 242, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.sky-portrait__image {
-  object-position: center;
-}
-
-.sky-portrait__image--cover {
-  object-fit: cover;
-}
-
-.sky-portrait__image--contain {
-  object-fit: contain;
-  padding: 0.5rem;
+  box-shadow: none;
 }
 
 .sky-portrait__caption {
@@ -1340,14 +1282,18 @@ code {
 }
 
 .sky-portrait__action {
+  height: auto;
   border: 0;
+  border-radius: 0;
   padding: 0;
   background: transparent;
+  box-shadow: none;
   color: rgba(238, 244, 255, 0.82);
   cursor: pointer;
   font-family: var(--mono);
   font-size: 0.55rem;
   letter-spacing: 0.08em;
+  text-decoration: none;
   text-transform: uppercase;
   border-bottom: 1px solid rgba(220, 230, 255, 0.3);
 }
@@ -1355,55 +1301,13 @@ code {
 .sky-portrait__action:hover,
 .sky-portrait__action:focus-visible {
   color: var(--sky-ink);
+  text-decoration: none;
   border-bottom-color: rgba(220, 230, 255, 0.58);
 }
 
 .sky-portrait__action:focus-visible {
   outline: none;
-}
-
-.sky-portrait__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem 0.75rem;
-  font-family: var(--mono);
-  font-size: 0.54rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(220, 230, 255, 0.56);
-}
-
-.sky-portrait__meta a {
-  border-bottom: 1px solid rgba(220, 230, 255, 0.34);
-}
-
-.sky-facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem 1rem;
-}
-
-.sky-fact {
-  display: grid;
-  gap: 0.16rem;
-  min-width: 0;
-}
-
-.sky-fact--wide {
-  grid-column: 1 / -1;
-}
-
-.sky-fact__label {
-  font-family: var(--mono);
-  font-size: 0.56rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.sky-fact__value {
-  font-size: 0.72rem;
-  line-height: 1.2;
-  text-wrap: pretty;
+  box-shadow: none;
 }
 
 .zodiac-list {
@@ -1412,9 +1316,10 @@ code {
   gap: 0.45rem 0.8rem;
 }
 
-.zodiac-list button {
+.sky-zodiac-button {
   display: grid;
   gap: 0.15rem;
+  width: 100%;
   padding: 0 0 0.35rem;
   border: 0;
   border-bottom: 1px solid var(--sky-line);
@@ -1423,9 +1328,10 @@ code {
   text-align: left;
   cursor: pointer;
   font: inherit;
+  white-space: normal;
 }
 
-.zodiac-list button.is-active {
+.sky-zodiac-button.is-active {
   border-bottom-color: currentColor;
 }
 
@@ -1437,22 +1343,22 @@ code {
   padding-right: 0;
 }
 
-.zodiac-rail .zodiac-list button {
+.zodiac-rail .sky-zodiac-button {
   gap: 0.18rem;
   padding-bottom: 0.45rem;
 }
 
-.zodiac-rail .zodiac-list button strong {
+.zodiac-rail .sky-zodiac-button strong {
   font-size: 0.76rem;
   font-weight: 500;
 }
 
-.zodiac-rail .zodiac-list button span {
+.zodiac-rail .sky-zodiac-button span {
   font-size: 0.62rem;
   line-height: 1.2;
 }
 
-.zodiac-rail .zodiac-list button small {
+.zodiac-rail .sky-zodiac-button small {
   font-family: var(--mono);
   font-size: 0.5rem;
   letter-spacing: 0.08em;
@@ -1460,15 +1366,15 @@ code {
   color: rgba(220, 230, 255, 0.54);
 }
 
-.zodiac-list button.is-below-horizon strong,
-.zodiac-list button.is-below-horizon span,
-.zodiac-list button.is-below-horizon small {
+.sky-zodiac-button.is-below-horizon strong,
+.sky-zodiac-button.is-below-horizon span,
+.sky-zodiac-button.is-below-horizon small {
   opacity: 0.48;
 }
 
-.zodiac-list button.is-active.is-below-horizon strong,
-.zodiac-list button.is-active.is-below-horizon span,
-.zodiac-list button.is-active.is-below-horizon small {
+.sky-zodiac-button.is-active.is-below-horizon strong,
+.sky-zodiac-button.is-active.is-below-horizon span,
+.sky-zodiac-button.is-active.is-below-horizon small {
   opacity: 0.82;
 }
 
@@ -1492,6 +1398,7 @@ code {
   text-align: left;
   cursor: pointer;
   font: inherit;
+  white-space: normal;
 }
 
 .sky-object-row--static {
@@ -1551,6 +1458,7 @@ code {
 
 .sky-object-row:focus-visible {
   outline: none;
+  box-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1586,14 +1494,6 @@ code {
   .sky-stage__tools {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .sky-stage__toggles {
-    justify-content: flex-start;
-  }
-
-  .sky-stage__tools {
-    justify-items: start;
   }
 
   .sky-stage__status {
@@ -1846,7 +1746,7 @@ code {
     overflow: visible;
   }
 
-  .zodiac-rail__inner .zodiac-list button,
+  .zodiac-rail__inner .sky-zodiac-button,
   .zodiac-rail__inner .sky-object-row {
     flex: none;
     width: max-content;
@@ -1856,14 +1756,14 @@ code {
     touch-action: pan-x;
   }
 
-  .zodiac-rail__inner .zodiac-list button span,
-  .zodiac-rail__inner .zodiac-list button small,
+  .zodiac-rail__inner .sky-zodiac-button span,
+  .zodiac-rail__inner .sky-zodiac-button small,
   .zodiac-rail__inner .sky-object-row span,
   .zodiac-rail__inner .sky-object-row small {
     display: none;
   }
 
-  .zodiac-rail__inner .zodiac-list button strong,
+  .zodiac-rail__inner .sky-zodiac-button strong,
   .zodiac-rail__inner .sky-object-row strong {
     white-space: nowrap;
     font-size: 0.72rem;
@@ -1911,10 +1811,6 @@ code {
   .zodiac-rail[data-details-open='false'] .zodiac-rail__inner {
     padding-top: 1rem;
     padding-bottom: 0.7rem;
-  }
-
-  .sky-facts {
-    grid-template-columns: 1fr;
   }
 
   .sky-loading-facts {

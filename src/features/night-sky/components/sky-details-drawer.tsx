@@ -13,8 +13,8 @@ export function SkyDetailsDrawer({ details, onSelectFocus }: SkyDetailsDrawerPro
   return (
     <div className="sky-details" id="sky-details" aria-live="polite">
       <div className="sky-details-stack">
-        <Card className="sky-portrait rounded-none bg-transparent py-0 text-inherit shadow-none ring-0">
-          <CardContent className="sky-portrait__caption px-0">
+        <Card className="sky-portrait">
+          <CardContent className="sky-portrait__caption">
             <p className="sky-portrait__eyebrow">{details.eyebrow}</p>
             <h3 className="sky-portrait__title">{details.title}</h3>
             <p className="sky-portrait__subtitle">{details.subtitle}</p>
@@ -30,8 +30,9 @@ export function SkyDetailsDrawer({ details, onSelectFocus }: SkyDetailsDrawerPro
                 {details.actions.map((action) => (
                   <Button
                     key={action.label}
+                    type="button"
                     variant="link"
-                    className="sky-portrait__action h-auto rounded-none p-0"
+                    className="sky-portrait__action"
                     onClick={() => {
                       onSelectFocus(action.focus)
                     }}

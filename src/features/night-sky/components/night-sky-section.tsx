@@ -31,6 +31,7 @@ import type { SkyDataset, SkyFocus } from '@/lib/types'
 import { PageMobileNav } from '@/components/site-nav'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import { SkyDetailsDrawer } from './sky-details-drawer'
 
 type NightSkySectionProps = {
@@ -72,6 +73,36 @@ type SkyPerformanceProfile = {
 
 const railButtonClassName =
   'h-auto w-full justify-start rounded-none border-0 bg-transparent px-0 py-0 font-inherit text-inherit shadow-none hover:bg-transparent hover:text-inherit focus-visible:border-transparent focus-visible:ring-0 active:translate-y-0'
+
+function getZodiacRailButtonClassName({
+  isActive,
+  isBelowHorizon,
+}: {
+  isActive: boolean
+  isBelowHorizon: boolean
+}) {
+  return cn(
+    'sky-zodiac-button',
+    railButtonClassName,
+    isActive && 'is-active',
+    isBelowHorizon && 'is-below-horizon',
+  )
+}
+
+function getSkyObjectButtonClassName({
+  isActive,
+  isBelowHorizon = false,
+}: {
+  isActive: boolean
+  isBelowHorizon?: boolean
+}) {
+  return cn(
+    'sky-object-row',
+    railButtonClassName,
+    isActive && 'is-active',
+    isBelowHorizon && 'is-below-horizon',
+  )
+}
 
 function getSkyPerformanceProfile({
   isCoarsePointer,
@@ -751,6 +782,15 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       )
     }
 
+    const selectSignFromRail = (signKey: string) => {
+      recenterNextSnapshotRef.current = false
+      selectSign(signKey, 'animate')
+    }
+
+    const selectReferenceStarFromRail = (starName: string) => {
+      selectReferenceStar(starName, 'animate')
+    }
+
     return (
       <section className="stars-demo" id="stars" ref={ref}>
         <div className="stars-demo__inner">
@@ -759,7 +799,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
             className="stars-layout"
             data-details-open={isDetailsOpen ? 'true' : 'false'}
           >
-            <Card className="sky-stage rounded-none bg-transparent py-0 text-inherit shadow-none ring-0">
+            <Card className="sky-stage">
               <div className="sky-stage__header">
                 <div className="sky-stage__tools">
                   <p className="sky-stage__status" id="sky-status-line" ref={statusLineRef} />
@@ -847,12 +887,12 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                             variant="ghost"
                             key={sign.key}
                             data-sign={sign.key}
-                            className={`${isSelected ? 'is-active ' : ''}${altitude <= 0 ? 'is-below-horizon ' : ''}${railButtonClassName}`.trim()}
+                            className={getZodiacRailButtonClassName({
+                              isActive: isSelected,
+                              isBelowHorizon: altitude <= 0,
+                            })}
                             aria-pressed={isSelected}
-                            onClick={() => {
-                              recenterNextSnapshotRef.current = false
-                              selectSign(sign.key, 'animate')
-                            }}
+                            onClick={() => selectSignFromRail(sign.key)}
                           >
                             <strong>{sign.name}</strong>
                             <span>{sign.railSubtitle ?? sign.dates}</span>
@@ -882,12 +922,12 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                               variant="ghost"
                               key={sign.key}
                               data-sign={sign.key}
-                              className={`${isSelected ? 'is-active ' : ''}${altitude <= 0 ? 'is-below-horizon ' : ''}${railButtonClassName}`.trim()}
+                              className={getZodiacRailButtonClassName({
+                                isActive: isSelected,
+                                isBelowHorizon: altitude <= 0,
+                              })}
                               aria-pressed={isSelected}
-                              onClick={() => {
-                                recenterNextSnapshotRef.current = false
-                                selectSign(sign.key, 'animate')
-                              }}
+                              onClick={() => selectSignFromRail(sign.key)}
                             >
                               <strong>{sign.name}</strong>
                               <span>{sign.railSubtitle ?? sign.dates}</span>
@@ -919,11 +959,11 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                               type="button"
                               variant="ghost"
                               key={star.key}
-                              className={`sky-object-row${star.isActive ? ' is-active' : ''} ${railButtonClassName}`.trim()}
+                              className={getSkyObjectButtonClassName({
+                                isActive: star.isActive,
+                              })}
                               aria-pressed={star.isActive}
-                              onClick={() => {
-                                selectReferenceStar(star.focus!.starName, 'animate')
-                              }}
+                              onClick={() => selectReferenceStarFromRail(star.focus!.starName)}
                             >
                               {content}
                             </Button>
@@ -948,11 +988,12 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                             type="button"
                             variant="ghost"
                             key={star.key}
-                            className={`sky-object-row${star.isActive ? ' is-active' : ''}${star.isBelowHorizon ? ' is-below-horizon' : ''} ${railButtonClassName}`.trim()}
+                            className={getSkyObjectButtonClassName({
+                              isActive: star.isActive,
+                              isBelowHorizon: star.isBelowHorizon,
+                            })}
                             aria-pressed={star.isActive}
-                            onClick={() => {
-                              selectReferenceStar(star.focus.starName, 'animate')
-                            }}
+                            onClick={() => selectReferenceStarFromRail(star.focus.starName)}
                           >
                             <strong>{star.name}</strong>
                             <span>{star.subtitle}</span>

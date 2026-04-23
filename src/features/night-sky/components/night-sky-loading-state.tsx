@@ -13,13 +13,10 @@ export function NightSkyLoadingState() {
           <PageMobileNav />
 
           <div className="stars-layout" data-details-open="true">
-            <div className="sky-stage">
+            <Card className="sky-stage">
               <div className="sky-stage__header">
                 <div className="sky-stage__tools">
-                  <Skeleton
-                    className="h-2.5 w-full max-w-[18rem] rounded-none justify-self-end"
-                    aria-hidden="true"
-                  />
+                  <Skeleton className="h-2.5 w-full max-w-[18rem] rounded-none" aria-hidden="true" />
                 </div>
               </div>
 
@@ -30,7 +27,7 @@ export function NightSkyLoadingState() {
                   <p className="sky-loading-copy">Loading sky view</p>
                 </div>
               </div>
-            </div>
+            </Card>
 
             <aside
               className="zodiac-rail"
@@ -39,11 +36,7 @@ export function NightSkyLoadingState() {
             >
               <div className="zodiac-rail__drawer sky-loading-region">
                 <p className="zodiac-rail__label">Details</p>
-                <Card
-                  size="sm"
-                  className="sky-loading-card rounded-none border border-white/10 bg-white/4 py-1 shadow-none"
-                  aria-hidden="true"
-                >
+                <Card size="sm" className="sky-loading-card" aria-hidden="true">
                   <CardContent className="grid gap-3 px-0">
                     <Skeleton className="aspect-[12/7] w-full rounded-none border border-white/10" />
                   </CardContent>
