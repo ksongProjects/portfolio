@@ -431,11 +431,12 @@ code {
   position: absolute;
   inset: 0;
   z-index: 3;
-  display: grid;
-  place-content: center;
-  gap: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   padding: 1.25rem;
-  text-align: center;
+  text-align: left;
   background:
     linear-gradient(180deg, rgba(7, 15, 29, 0.78), rgba(10, 19, 37, 0.84));
   backdrop-filter: blur(12px);
@@ -1001,6 +1002,14 @@ code {
   color: inherit;
   background: rgba(255, 255, 255, 0.025);
   box-shadow: none;
+}
+
+.sky-loading-card,
+.sky-loading-card [data-slot='card-header'],
+.sky-loading-card [data-slot='card-content'],
+.sky-portrait,
+.sky-portrait [data-slot='card-content'] {
+  border-radius: 0 !important;
 }
 
 .sky-stage__header {
