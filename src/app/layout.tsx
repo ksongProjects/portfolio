@@ -5,9 +5,12 @@ import { anonymousPro } from '@/lib/fonts'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Kyung Min Song | Portfolio & Night Sky',
+  title: {
+    default: 'Kyung Min Song | Demo Portfolio',
+    template: '%s | Kyung Min Song',
+  },
   description:
-    'Minimal portfolio and interactive night sky explorer for Kyung Min Song, built with Next.js 16.',
+    'Modular Next.js portfolio and demo lab with route-based feature apps and service seams.',
 }
 
 export default function RootLayout({

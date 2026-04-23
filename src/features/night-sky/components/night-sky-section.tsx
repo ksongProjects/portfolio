@@ -28,8 +28,8 @@ import {
   writeStorage,
 } from '@/lib/sky/utils'
 import type { SkyDataset, SkyFocus } from '@/lib/types'
+import { PageMobileNav } from '@/components/site-nav'
 import { SkyDetailsDrawer } from './sky-details-drawer'
-import { SectionMobileNav } from './site-nav'
 
 type NightSkySectionProps = {
   dataset: SkyDataset
@@ -749,7 +749,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
     return (
       <section className="stars-demo" id="stars" ref={ref}>
         <div className="stars-demo__inner">
-          <SectionMobileNav currentSection="stars" />
+          <PageMobileNav />
           <div
             className="stars-layout"
             data-details-open={isDetailsOpen ? 'true' : 'false'}

@@ -1,23 +1,16 @@
-import { PortfolioApp } from '@/components/portfolio-app'
-import { profile, socialLinks } from '@/lib/portfolio-content'
-import { getOrganizationProjects } from '@/server/github/repository'
-import { maybeEnsureSkyDataset } from '@/server/sky/repository'
+import type { Metadata } from 'next'
+import { PortfolioLandingPage } from '@/features/portfolio/components/portfolio-landing-page'
+import { getPortfolioPageData } from '@/features/portfolio/server/get-portfolio-page-data'
 
-export const dynamic = 'force-dynamic'
+export const metadata: Metadata = {
+  title: 'Portfolio',
+  description: 'Portfolio landing page and entry point into the demo app collection.',
+}
 
 export default async function Home() {
-  const [skyDataset, projects] = await Promise.all([
-    maybeEnsureSkyDataset(),
-    getOrganizationProjects(),
-  ])
+  const { profile, socialLinks, projects } = await getPortfolioPageData()
 
   return (
-    <PortfolioApp
-      profile={profile}
-      socialLinks={socialLinks}
-      projects={projects}
-      skyDataset={skyDataset}
-      initialNowIso={new Date().toISOString()}
-    />
+    <PortfolioLandingPage profile={profile} socialLinks={socialLinks} projects={projects} />
   )
 }

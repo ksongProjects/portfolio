@@ -1,34 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Portfolio Demo Lab
 
-## Getting Started
+Next.js 16 app for portfolio landing plus route-based demo apps.
 
-First, run the development server:
+## Routes
+
+- `/` portfolio landing page
+- `/night-sky` interactive night sky explorer
+- `/finance` placeholder for future live portfolio viewer
+- `/budget` placeholder for future budget manager
+
+## Architecture
+
+App use modular monolith shape now:
+
+- `src/app` keeps route entry points
+- `src/features/<feature>` owns page components and page data loaders
+- `src/server` keeps shared infra like DB access and service registry
+- `src/lib` keeps shared types, content, and pure helpers
+
+This keeps one frontend app, one deployment, one auth/session surface, while leaving clean seams for future service splits.
+
+## Microservice-ready seam
+
+Finance and budget placeholders already read optional service URLs from env:
+
+- `FINANCE_SERVICE_URL`
+- `BUDGET_SERVICE_URL`
+
+Best practice path:
+
+1. Browser talks to Next.js route handlers or server actions.
+2. Next.js acts as BFF/gateway for auth, caching, normalization, and secret handling.
+3. Feature services move out only when needed for scale, background jobs, vendor complexity, or team ownership.
+
+## Development
+
+Run local dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Data setup
 
-## Learn More
+Night sky route can use Supabase-backed catalog data.
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run db:push
+npm run sky:sync
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Set `DATABASE_URL`, `POSTGRES_URL`, or `SUPABASE_DB_URL` first.

@@ -1,11 +1,11 @@
 import { forwardRef } from 'react'
-import { SectionMobileNav } from './site-nav'
+import { PageMobileNav } from '@/components/site-nav'
 
 export const NightSkySetupSection = forwardRef<HTMLElement>(function NightSkySetupSection(_, ref) {
   return (
     <section className="stars-demo" id="stars" ref={ref}>
       <div className="stars-demo__inner">
-        <SectionMobileNav currentSection="stars" />
+        <PageMobileNav />
         <div className="stars-layout">
           <div className="sky-setup">
             <p className="sky-setup__eyebrow">Database setup required</p>

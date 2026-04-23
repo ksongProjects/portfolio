@@ -1,46 +1,31 @@
 'use client'
 
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { Menu, X } from 'lucide-react'
+import { getActiveSiteRoute, siteRoutes } from '@/lib/site-routes'
 
-type SectionKey = 'portfolio' | 'stars'
+export function SiteNav() {
+  const pathname = usePathname()
+  const activeRoute = getActiveSiteRoute(pathname)
 
-type SiteNavProps = {
-  activeSection: SectionKey
-}
-
-const navItems = [
-  {
-    key: 'portfolio',
-    href: '#portfolio',
-    index: '01',
-    label: 'Portfolio',
-  },
-  {
-    key: 'stars',
-    href: '#stars',
-    index: '02',
-    label: 'Night Sky',
-  },
-] as const
-
-export function SiteNav({ activeSection }: SiteNavProps) {
   return (
     <nav className="site-index" aria-label="Page navigation">
       <div className="site-index__desktop">
         <div className="site-index__breadcrumbs">
-          {navItems.map((item, index) => (
+          {siteRoutes.map((item, index) => (
             <Fragment key={item.key}>
-              <a
+              <Link
                 href={item.href}
-                data-target={item.key}
-                className={activeSection === item.key ? 'is-active' : undefined}
-                aria-current={activeSection === item.key ? 'page' : undefined}
+                data-route={item.key}
+                className={activeRoute.key === item.key ? 'is-active' : undefined}
+                aria-current={activeRoute.key === item.key ? 'page' : undefined}
               >
                 <span>{item.index}</span>
                 <strong>{item.label}</strong>
-              </a>
-              {index < navItems.length - 1 ? (
+              </Link>
+              {index < siteRoutes.length - 1 ? (
                 <span className="site-index__divider" aria-hidden="true" />
               ) : null}
             </Fragment>
@@ -51,10 +36,11 @@ export function SiteNav({ activeSection }: SiteNavProps) {
   )
 }
 
-export function SectionMobileNav({ currentSection }: { currentSection: SectionKey }) {
+export function PageMobileNav() {
   const [isOpen, setIsOpen] = useState(false)
   const navRef = useRef<HTMLDivElement | null>(null)
-  const activeItem = navItems.find((item) => item.key === currentSection) ?? navItems[0]
+  const pathname = usePathname()
+  const activeItem = getActiveSiteRoute(pathname)
 
   useEffect(() => {
     if (!isOpen) {
@@ -95,7 +81,7 @@ export function SectionMobileNav({ currentSection }: { currentSection: SectionKe
         type="button"
         className="section-mobile-nav__toggle"
         aria-expanded={isOpen}
-        aria-controls={`section-mobile-nav-sheet-${currentSection}`}
+        aria-controls="section-mobile-nav-sheet"
         aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'}
         onClick={() => {
           setIsOpen((current) => !current)
@@ -106,23 +92,23 @@ export function SectionMobileNav({ currentSection }: { currentSection: SectionKe
 
       <div
         className="section-mobile-nav__sheet"
-        id={`section-mobile-nav-sheet-${currentSection}`}
+        id="section-mobile-nav-sheet"
       >
         <div className="site-index__links">
-          {navItems.map((item) => (
-            <a
+          {siteRoutes.map((item) => (
+            <Link
               key={item.key}
               href={item.href}
-              data-target={item.key}
-              className={currentSection === item.key ? 'is-active' : undefined}
-              aria-current={currentSection === item.key ? 'page' : undefined}
+              data-route={item.key}
+              className={activeItem.key === item.key ? 'is-active' : undefined}
+              aria-current={activeItem.key === item.key ? 'page' : undefined}
               onClick={() => {
                 setIsOpen(false)
               }}
             >
               <span>{item.index}</span>
               <strong>{item.label}</strong>
-            </a>
+            </Link>
           ))}
         </div>
       </div>

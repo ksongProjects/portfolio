@@ -3,7 +3,7 @@
 import { GitBranch, Globe } from 'lucide-react'
 import { forwardRef, useState } from 'react'
 import type { Profile, Project, SocialLink } from '@/lib/types'
-import { SectionMobileNav } from './site-nav'
+import { PageMobileNav } from '@/components/site-nav'
 
 const PROJECTS_PER_PAGE = 4
 
@@ -26,7 +26,7 @@ export const PortfolioSection = forwardRef<HTMLElement, PortfolioSectionProps>(
     return (
       <section className="portfolio" id="portfolio" ref={ref}>
         <div className="portfolio__inner">
-          <SectionMobileNav currentSection="portfolio" />
+          <PageMobileNav />
           <div className="monograph-layout">
             <div className="monograph-intro">
               <h2>{profile.name}</h2>
