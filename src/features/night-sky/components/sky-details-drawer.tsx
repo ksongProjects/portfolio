@@ -1,3 +1,6 @@
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import type { SkyFocus } from '@/lib/types'
 import type { SkyDetailsContent } from '@/lib/sky/details'
 
@@ -10,35 +13,36 @@ export function SkyDetailsDrawer({ details, onSelectFocus }: SkyDetailsDrawerPro
   return (
     <div className="sky-details" id="sky-details" aria-live="polite">
       <div className="sky-details-stack">
-        <div className="sky-portrait">
-          <div className="sky-portrait__caption">
+        <Card className="sky-portrait rounded-none bg-transparent py-0 text-inherit shadow-none ring-0">
+          <CardContent className="sky-portrait__caption px-0">
             <p className="sky-portrait__eyebrow">{details.eyebrow}</p>
             <h3 className="sky-portrait__title">{details.title}</h3>
             <p className="sky-portrait__subtitle">{details.subtitle}</p>
-            <p
+            <Badge
+              variant="outline"
               className={`sky-portrait__visibility-badge sky-portrait__visibility-badge--${details.visibilityBadge.tone}`}
             >
               {details.visibilityBadge.label}
-            </p>
+            </Badge>
             <p className="sky-portrait__fact">{details.fact}</p>
             {details.actions?.length ? (
               <div className="sky-portrait__actions">
                 {details.actions.map((action) => (
-                  <button
-                    type="button"
-                    className="sky-portrait__action"
+                  <Button
                     key={action.label}
+                    variant="link"
+                    className="sky-portrait__action h-auto rounded-none p-0"
                     onClick={() => {
                       onSelectFocus(action.focus)
                     }}
                   >
                     {action.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             ) : null}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
       <p className="sky-details__credit">
         Sources:{' '}

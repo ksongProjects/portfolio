@@ -29,6 +29,8 @@ import {
 } from '@/lib/sky/utils'
 import type { SkyDataset, SkyFocus } from '@/lib/types'
 import { PageMobileNav } from '@/components/site-nav'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { SkyDetailsDrawer } from './sky-details-drawer'
 
 type NightSkySectionProps = {
@@ -67,6 +69,9 @@ type SkyPerformanceProfile = {
   showReferenceLabels: boolean
   constellationLabelMode: 'all' | 'focused'
 }
+
+const railButtonClassName =
+  'h-auto w-full justify-start rounded-none border-0 bg-transparent px-0 py-0 font-inherit text-inherit shadow-none hover:bg-transparent hover:text-inherit focus-visible:border-transparent focus-visible:ring-0 active:translate-y-0'
 
 function getSkyPerformanceProfile({
   isCoarsePointer,
@@ -754,7 +759,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
             className="stars-layout"
             data-details-open={isDetailsOpen ? 'true' : 'false'}
           >
-            <div className="sky-stage">
+            <Card className="sky-stage rounded-none bg-transparent py-0 text-inherit shadow-none ring-0">
               <div className="sky-stage__header">
                 <div className="sky-stage__tools">
                   <p className="sky-stage__status" id="sky-status-line" ref={statusLineRef} />
@@ -769,8 +774,9 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                   aria-label={`${selectedSign.name} constellation preview in night mode. Drag to pan and click visible stars or constellations for details.`}
                 />
                 <div className="sky-canvas-zoom" aria-label="Sky zoom controls">
-                  <button
-                    type="button"
+                  <Button
+                    variant="outline"
+                    size="icon"
                     className="sky-canvas-zoom__button"
                     aria-label="Zoom in"
                     onClick={() => {
@@ -779,9 +785,10 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                     disabled={!canZoomIn}
                   >
                     +
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
                     className="sky-canvas-zoom__button"
                     aria-label="Zoom out"
                     onClick={() => {
@@ -790,18 +797,19 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                     disabled={!canZoomOut}
                   >
                     -
-                  </button>
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Card>
 
             <aside
               className="zodiac-rail"
               aria-label="Constellation selection"
               data-details-open={isDetailsOpen ? 'true' : 'false'}
             >
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="icon-sm"
                 className="zodiac-rail__drawer-toggle"
                 aria-controls="sky-details-panel"
                 aria-expanded={isDetailsOpen}
@@ -813,7 +821,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                 <span className="zodiac-rail__drawer-toggle-icon" aria-hidden="true">
                   {isDetailsOpen ? '>' : '<'}
                 </span>
-              </button>
+              </Button>
 
               {isDetailsOpen ? (
                 <div className="zodiac-rail__drawer" id="sky-details-panel">
@@ -834,11 +842,12 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                         const visibilityLabel = getVisibilityLabel(altitude)
 
                         return (
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
                             key={sign.key}
                             data-sign={sign.key}
-                            className={`${isSelected ? 'is-active ' : ''}${altitude <= 0 ? 'is-below-horizon' : ''}`.trim()}
+                            className={`${isSelected ? 'is-active ' : ''}${altitude <= 0 ? 'is-below-horizon ' : ''}${railButtonClassName}`.trim()}
                             aria-pressed={isSelected}
                             onClick={() => {
                               recenterNextSnapshotRef.current = false
@@ -848,7 +857,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                             <strong>{sign.name}</strong>
                             <span>{sign.railSubtitle ?? sign.dates}</span>
                             <small>{visibilityLabel}</small>
-                          </button>
+                          </Button>
                         )
                       })}
                     </div>
@@ -868,11 +877,12 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                           const visibilityLabel = getVisibilityLabel(altitude)
 
                           return (
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
                               key={sign.key}
                               data-sign={sign.key}
-                              className={`${isSelected ? 'is-active ' : ''}${altitude <= 0 ? 'is-below-horizon' : ''}`.trim()}
+                              className={`${isSelected ? 'is-active ' : ''}${altitude <= 0 ? 'is-below-horizon ' : ''}${railButtonClassName}`.trim()}
                               aria-pressed={isSelected}
                               onClick={() => {
                                 recenterNextSnapshotRef.current = false
@@ -882,7 +892,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                               <strong>{sign.name}</strong>
                               <span>{sign.railSubtitle ?? sign.dates}</span>
                               <small>{visibilityLabel}</small>
-                            </button>
+                            </Button>
                           )
                         })}
                       </div>
@@ -905,17 +915,18 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                           )
 
                           return star.focus ? (
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
                               key={star.key}
-                              className={`sky-object-row${star.isActive ? ' is-active' : ''}`}
+                              className={`sky-object-row${star.isActive ? ' is-active' : ''} ${railButtonClassName}`.trim()}
                               aria-pressed={star.isActive}
                               onClick={() => {
                                 selectReferenceStar(star.focus!.starName, 'animate')
                               }}
                             >
                               {content}
-                            </button>
+                            </Button>
                           ) : (
                             <div className="sky-object-row sky-object-row--static" key={star.key}>
                               {content}
@@ -933,10 +944,11 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                       </p>
                       <div className="sky-object-list" aria-label="Popular stars">
                         {popularStars.map((star) => (
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
                             key={star.key}
-                            className={`sky-object-row${star.isActive ? ' is-active' : ''}${star.isBelowHorizon ? ' is-below-horizon' : ''}`}
+                            className={`sky-object-row${star.isActive ? ' is-active' : ''}${star.isBelowHorizon ? ' is-below-horizon' : ''} ${railButtonClassName}`.trim()}
                             aria-pressed={star.isActive}
                             onClick={() => {
                               selectReferenceStar(star.focus.starName, 'animate')
@@ -945,7 +957,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                             <strong>{star.name}</strong>
                             <span>{star.subtitle}</span>
                             <small>{star.meta}</small>
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     </section>
