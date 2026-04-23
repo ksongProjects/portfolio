@@ -4,8 +4,18 @@ import type { Project, RepoActivity } from '@/lib/types'
 const GITHUB_ORGANIZATION = 'ksongProjects'
 const GITHUB_API_VERSION = '2022-11-28'
 const REPO_ACTIVITY_REVALIDATE_SECONDS = 60 * 60
+const GITHUB_PROJECT_CACHE_TTL_MS = 30_000
 const GITHUB_PER_PAGE = 100
 const MAX_TECH_STACK_ITEMS = 4
+
+type GitHubProjectCacheEntry = {
+  projects: Project[]
+  checkedAt: number
+}
+
+const globalForGitHubProjects = globalThis as typeof globalThis & {
+  portfolioGitHubProjectsCache?: GitHubProjectCacheEntry
+}
 
 type GitHubRepoResponse = {
   name: string
@@ -227,10 +237,44 @@ async function loadOrganizationProjects(): Promise<Project[]> {
   return projects
 }
 
-export const getOrganizationProjects = unstable_cache(
+const getCachedOrganizationProjects = unstable_cache(
   loadOrganizationProjects,
   ['github-organization-projects', GITHUB_ORGANIZATION],
   {
     revalidate: REPO_ACTIVITY_REVALIDATE_SECONDS,
   },
 )
+
+export async function getOrganizationProjects(): Promise<Project[]> {
+  const freshCachedProjects = getFreshCachedOrganizationProjects()
+
+  if (freshCachedProjects) {
+    return freshCachedProjects
+  }
+
+  const projects = await getCachedOrganizationProjects()
+  setCachedOrganizationProjects(projects)
+
+  return projects
+}
+
+function getFreshCachedOrganizationProjects(): Project[] | null {
+  const cachedEntry = globalForGitHubProjects.portfolioGitHubProjectsCache
+
+  if (!cachedEntry) {
+    return null
+  }
+
+  if (Date.now() - cachedEntry.checkedAt > GITHUB_PROJECT_CACHE_TTL_MS) {
+    return null
+  }
+
+  return cachedEntry.projects
+}
+
+function setCachedOrganizationProjects(projects: Project[]): void {
+  globalForGitHubProjects.portfolioGitHubProjectsCache = {
+    projects,
+    checkedAt: Date.now(),
+  }
+}

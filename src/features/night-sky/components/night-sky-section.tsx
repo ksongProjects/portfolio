@@ -32,6 +32,7 @@ import { PageMobileNav } from '@/components/site-nav'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import { SkyDetailsDrawer } from './sky-details-drawer'
 
@@ -170,6 +171,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
     const viewValueRef = useRef<HTMLSpanElement | null>(null)
     const snapshotRef = useRef<SkySnapshot>(initialSnapshot)
     const sceneRef = useRef<SkyScene | null>(null)
+    const hasDrawnInitialFrameRef = useRef(false)
     const viewCenterRef = useRef<ViewCenter>({
       azimuth: normalizeAngle(initialSnapshot.current.position.azimuth),
       altitude: clampViewAltitude(initialSnapshot.current.position.altitude),
@@ -189,6 +191,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
     const [snapshot, setSnapshot] = useState(initialSnapshot)
     const [isDetailsOpen, setIsDetailsOpen] = useState(true)
     const [isCoarsePointer, setIsCoarsePointer] = useState(false)
+    const [isCanvasReady, setIsCanvasReady] = useState(false)
     const [showGuides, setShowGuides] = useState(true)
     const [verticalViewAngle, setVerticalViewAngle] = useState(VERTICAL_VIEW_ANGLE)
 
@@ -260,6 +263,11 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         showReferenceLabels: performanceProfile.showReferenceLabels,
         constellationLabelMode: performanceProfile.constellationLabelMode,
       })
+
+      if (!hasDrawnInitialFrameRef.current) {
+        hasDrawnInitialFrameRef.current = true
+        setIsCanvasReady(true)
+      }
     })
 
     const scheduleRender = useEffectEvent(() => {
@@ -804,13 +812,19 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
             data-details-open={isDetailsOpen ? 'true' : 'false'}
           >
             <Card className="sky-stage">
-              <div className="sky-canvas-shell">
+              <div className={cn('sky-canvas-shell', !isCanvasReady && 'sky-loading-region')}>
                 <canvas
                   ref={canvasRef}
-                  className="sky-canvas"
+                  className={cn('sky-canvas', !isCanvasReady && 'sky-canvas--loading')}
                   id="sky-canvas"
                   aria-label={`${selectedSign.name} constellation preview in night mode. Drag to pan and click visible stars or constellations for details.`}
                 />
+                {!isCanvasReady ? (
+                  <div className="sky-loading-overlay" role="status" aria-live="polite">
+                    <Spinner className="size-8" />
+                    <p className="sky-loading-copy">Loading sky view</p>
+                  </div>
+                ) : null}
                 <Button
                   type="button"
                   variant="outline"
