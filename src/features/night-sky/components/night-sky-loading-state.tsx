@@ -79,14 +79,14 @@ export function NightSkyLoadingState() {
                           <Skeleton className="h-3.5 w-2/3 rounded-none" />
                           <Skeleton className="h-2.5 w-1/2 rounded-none" />
                           {index < 5 ? (
-                            <Separator className="mt-3 bg-[var(--sky-line)]" decorative />
+                            <Separator className="mt-3 bg-[var(--sky-line)]" />
                           ) : null}
                         </div>
                       ))}
                     </div>
                   </section>
 
-                  <Separator className="bg-[var(--sky-line)]" decorative />
+                  <Separator className="bg-[var(--sky-line)]" />
 
                   <section className="zodiac-rail__group">
                     <p className="zodiac-rail__label zodiac-rail__label--section">Popular stars</p>
@@ -96,7 +96,7 @@ export function NightSkyLoadingState() {
                           <Skeleton className="h-3.5 w-2/3 rounded-none" />
                           <Skeleton className="h-2.5 w-1/2 rounded-none" />
                           {index < 3 ? (
-                            <Separator className="mt-3 bg-[var(--sky-line)]" decorative />
+                            <Separator className="mt-3 bg-[var(--sky-line)]" />
                           ) : null}
                         </div>
                       ))}

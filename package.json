@@ -13,6 +13,7 @@
     "sky:sync-popular": "node --env-file=.env --import tsx src/server/sky/sync-popular-cli.ts"
   },
   "dependencies": {
+    "@base-ui/react": "^1.4.1",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "astronomy-engine": "^2.1.19",
