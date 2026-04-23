@@ -1,11 +1,16 @@
-import type { ComponentPropsWithoutRef } from 'react'
+import { LoaderIcon } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-type SpinnerProps = ComponentPropsWithoutRef<'span'> & {
-  size?: 'sm' | 'md' | 'lg'
+function Spinner({ className, ...props }: React.ComponentProps<'svg'>) {
+  return (
+    <LoaderIcon
+      role="status"
+      aria-label="Loading"
+      data-slot="spinner"
+      className={cn('size-4 animate-spin', className)}
+      {...props}
+    />
+  )
 }
 
-export function Spinner({ size = 'md', className, ...props }: SpinnerProps) {
-  const classes = ['ui-spinner', `ui-spinner--${size}`, className].filter(Boolean).join(' ')
-
-  return <span data-slot="spinner" aria-hidden="true" className={classes} {...props} />
-}
+export { Spinner }

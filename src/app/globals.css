@@ -1,3 +1,7 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
 :root {
   --canvas: #08111f;
   --ink: #eef4ff;
@@ -295,34 +299,6 @@ code {
   gap: 0;
 }
 
-.ui-spinner {
-  display: inline-block;
-  border-style: solid;
-  border-color: rgba(220, 230, 255, 0.18);
-  border-top-color: currentColor;
-  border-radius: 9999px;
-  color: rgba(238, 244, 255, 0.92);
-  animation: ui-spinner-spin 850ms linear infinite;
-}
-
-.ui-spinner--sm {
-  width: 1rem;
-  height: 1rem;
-  border-width: 1.5px;
-}
-
-.ui-spinner--md {
-  width: 1.5rem;
-  height: 1.5rem;
-  border-width: 2px;
-}
-
-.ui-spinner--lg {
-  width: 2rem;
-  height: 2rem;
-  border-width: 2px;
-}
-
 .zodiac-rail {
   position: relative;
   z-index: 1;
@@ -485,7 +461,6 @@ code {
 }
 
 .sky-loading-card {
-  gap: 0.75rem;
   min-height: 100%;
 }
 
@@ -502,71 +477,6 @@ code {
   display: grid;
   gap: 0.2rem;
   padding-bottom: 0.45rem;
-  border-bottom: 1px solid var(--sky-line);
-}
-
-.sky-loading-line,
-.sky-loading-block {
-  position: relative;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.sky-loading-line::after,
-.sky-loading-block::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(90deg, transparent, rgba(220, 230, 255, 0.12), transparent);
-  transform: translateX(-100%);
-  animation: sky-loading-shimmer 1.35s linear infinite;
-}
-
-.sky-loading-line {
-  height: 0.7rem;
-}
-
-.sky-loading-line--status {
-  width: min(18rem, 100%);
-  margin-left: auto;
-}
-
-.sky-loading-line--eyebrow {
-  width: 6rem;
-  height: 0.55rem;
-}
-
-.sky-loading-line--title {
-  width: 72%;
-  height: 1.5rem;
-}
-
-.sky-loading-line--copy {
-  width: 100%;
-}
-
-.sky-loading-line--copy:nth-of-type(5) {
-  width: 84%;
-}
-
-.sky-loading-line--item-title {
-  width: 62%;
-}
-
-.sky-loading-line--item-meta {
-  width: 46%;
-  height: 0.58rem;
-}
-
-.sky-loading-block--media {
-  width: 100%;
-  aspect-ratio: 12 / 7;
-  border: 1px solid rgba(151, 178, 242, 0.12);
-}
-
-.sky-loading-block--fact {
-  height: 3.25rem;
 }
 
 .section-head,
@@ -1650,24 +1560,6 @@ code {
 
   .site-index__inner {
     transition: none;
-  }
-
-  .ui-spinner,
-  .sky-loading-line::after,
-  .sky-loading-block::after {
-    animation: none;
-  }
-}
-
-@keyframes ui-spinner-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes sky-loading-shimmer {
-  to {
-    transform: translateX(100%);
   }
 }
 
