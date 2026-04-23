@@ -1,7 +1,19 @@
-import { queryAll } from '@/server/db'
+import { queryAll, queryFirst } from '@/server/db'
 import type { ReferenceStar, SkyCatalogStar, SkyDataset, ZodiacSign } from '@/lib/types'
 import { isDatabaseConfigured } from '@/server/db/config'
-import { syncSkyCatalog, isSkyCatalogEmpty } from './catalog'
+import { syncSkyCatalog } from './catalog'
+
+type SkyDatasetCacheEntry = {
+  version: string
+  dataset: SkyDataset
+  checkedAt: number
+}
+
+const globalForSkyDataset = globalThis as typeof globalThis & {
+  portfolioSkyDatasetCache?: SkyDatasetCacheEntry
+}
+
+const SKY_DATASET_CACHE_TTL_MS = 30_000
 
 const zodiacYearOrder = [
   'capricorn',
@@ -169,8 +181,23 @@ function parseEdgeHipPairs(
 }
 
 export async function ensureSkyDataset(): Promise<SkyDataset> {
-  if (await isSkyCatalogEmpty()) {
+  const freshCachedDataset = getFreshCachedSkyDataset()
+
+  if (freshCachedDataset) {
+    return freshCachedDataset
+  }
+
+  let cacheState = await getSkyDatasetCacheState()
+
+  if (cacheState.constellationCount === 0) {
     await syncSkyCatalog()
+    cacheState = await getSkyDatasetCacheState()
+  }
+
+  const cachedDataset = getCachedSkyDataset(cacheState.version)
+
+  if (cachedDataset) {
+    return cachedDataset
   }
 
   const dataset = await getSkyDataset()
@@ -178,6 +205,8 @@ export async function ensureSkyDataset(): Promise<SkyDataset> {
   if (dataset.zodiacSigns.length === 0) {
     throw new Error('Sky catalog is empty after sync.')
   }
+
+  setCachedSkyDataset(cacheState.version, dataset)
 
   return dataset
 }
@@ -337,4 +366,70 @@ export async function maybeEnsureSkyDataset(): Promise<SkyDataset | null> {
   const dataset = await ensureSkyDataset()
 
   return dataset.zodiacSigns.length > 0 ? dataset : null
+}
+
+async function getSkyDatasetCacheState(): Promise<{
+  constellationCount: number
+  version: string | null
+}> {
+  const result = await queryFirst<{
+    constellationCount: number
+    version: string | null
+  }>(`
+    SELECT
+      COUNT(*)::int AS "constellationCount",
+      GREATEST(
+        COALESCE((SELECT MAX("updatedAt") FROM "Constellation"), TIMESTAMPTZ 'epoch'),
+        COALESCE((SELECT MAX("updatedAt") FROM "Star"), TIMESTAMPTZ 'epoch'),
+        COALESCE((SELECT MAX("updatedAt") FROM "FeaturedStar"), TIMESTAMPTZ 'epoch')
+      )::text AS "version"
+    FROM "Constellation"
+  `)
+
+  return {
+    constellationCount: result?.constellationCount ?? 0,
+    version: result?.version ?? null,
+  }
+}
+
+function getFreshCachedSkyDataset(): SkyDataset | null {
+  const cachedEntry = globalForSkyDataset.portfolioSkyDatasetCache
+
+  if (!cachedEntry) {
+    return null
+  }
+
+  if (Date.now() - cachedEntry.checkedAt > SKY_DATASET_CACHE_TTL_MS) {
+    return null
+  }
+
+  return cachedEntry.dataset
+}
+
+function getCachedSkyDataset(version: string | null): SkyDataset | null {
+  if (!version) {
+    return null
+  }
+
+  const cachedEntry = globalForSkyDataset.portfolioSkyDatasetCache
+
+  if (!cachedEntry || cachedEntry.version !== version) {
+    return null
+  }
+
+  cachedEntry.checkedAt = Date.now()
+
+  return cachedEntry.dataset
+}
+
+function setCachedSkyDataset(version: string | null, dataset: SkyDataset): void {
+  if (!version) {
+    return
+  }
+
+  globalForSkyDataset.portfolioSkyDatasetCache = {
+    version,
+    dataset,
+    checkedAt: Date.now(),
+  }
 }
