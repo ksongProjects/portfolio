@@ -14,14 +14,10 @@ export function NightSkyLoadingState() {
 
           <div className="stars-layout" data-details-open="true">
             <Card className="sky-stage">
-              <div className="sky-stage__header">
-                <div className="sky-stage__tools">
-                  <Skeleton className="h-2.5 w-full max-w-[18rem] rounded-none" aria-hidden="true" />
-                </div>
-              </div>
-
               <div className="sky-canvas-shell sky-loading-region">
                 <Skeleton className="sky-canvas sky-canvas--loading rounded-none" aria-hidden="true" />
+                <Skeleton className="sky-canvas-toggle sky-canvas-toggle--loading rounded-none" aria-hidden="true" />
+                <Skeleton className="sky-canvas-status sky-canvas-status--loading rounded-none" aria-hidden="true" />
                 <div className="sky-loading-overlay" role="status" aria-live="polite">
                   <Spinner className="size-8" />
                   <p className="sky-loading-copy">Loading sky view</p>

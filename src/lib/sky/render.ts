@@ -111,6 +111,24 @@ function drawSkyGuideOverlay(
   ctx.font = `12px ${anonymousProFontFamily}`
   ctx.textBaseline = 'alphabetic'
 
+  const drawGuideLabel = (
+    label: string,
+    point: { x: number; y: number },
+    verticalOffset: number,
+  ) => {
+    ctx.save()
+    ctx.setLineDash([])
+    ctx.textAlign = 'center'
+    ctx.fillStyle = 'rgba(238, 244, 255, 0.78)'
+    ctx.shadowColor = 'rgba(8, 17, 34, 0.55)'
+    ctx.shadowBlur = 6
+    ctx.shadowOffsetY = 1
+    const x = Math.max(18, Math.min(width - 18, point.x))
+    const y = Math.max(18, Math.min(height - 18, point.y + verticalOffset))
+    ctx.fillText(label, x, y)
+    ctx.restore()
+  }
+
   scene.altitudeGuides.forEach(({ altitude, label, paths, labelPoint, major }) => {
     ctx.strokeStyle =
       altitude < 0
@@ -133,11 +151,8 @@ function drawSkyGuideOverlay(
       ctx.stroke()
     })
 
-    if (labelPoint) {
-      ctx.setLineDash([])
-      ctx.fillStyle = 'rgba(255,255,255,0.54)'
-      ctx.textAlign = 'left'
-      ctx.fillText(label, 12, Math.max(18, Math.min(height - 10, labelPoint.y - 6)))
+    if (major && labelPoint) {
+      drawGuideLabel(label, labelPoint, -8)
     }
   })
 
@@ -157,13 +172,7 @@ function drawSkyGuideOverlay(
     })
 
     if (major && labelPoint) {
-      ctx.setLineDash([])
-      ctx.fillStyle = 'rgba(255,255,255,0.54)'
-      const placement = getEdgeAwareLabelPlacement(labelPoint, width, height)
-      ctx.textAlign = placement.textAlign
-      ctx.textBaseline = placement.textBaseline
-      ctx.fillText(label, placement.x, placement.y)
-      ctx.textBaseline = 'alphabetic'
+      drawGuideLabel(label, labelPoint, 14)
     }
   })
 
@@ -502,46 +511,6 @@ function drawReferenceStars(
   ctx.restore()
 }
 
-function getEdgeAwareLabelPlacement(
-  point: { x: number; y: number },
-  width: number,
-  height: number,
-): {
-  x: number
-  y: number
-  textAlign: CanvasTextAlign
-  textBaseline: CanvasTextBaseline
-} {
-  const edgeThreshold = 28
-  let x = point.x
-  let y = point.y
-  let textAlign: CanvasTextAlign = 'center'
-  let textBaseline: CanvasTextBaseline = 'middle'
-
-  if (point.x <= edgeThreshold) {
-    textAlign = 'left'
-    x += 6
-  } else if (point.x >= width - edgeThreshold) {
-    textAlign = 'right'
-    x -= 6
-  }
-
-  if (point.y <= edgeThreshold) {
-    textBaseline = 'top'
-    y += 6
-  } else if (point.y >= height - edgeThreshold) {
-    textBaseline = 'bottom'
-    y -= 6
-  }
-
-  return {
-    x,
-    y,
-    textAlign,
-    textBaseline,
-  }
-}
-
 function drawHorizon(
   ctx: CanvasRenderingContext2D,
   scene: SkyScene,
@@ -567,10 +536,13 @@ function drawHorizon(
 
   if (scene.horizon.labelPoint) {
     ctx.fillStyle = 'rgba(255,255,255,0.72)'
+    ctx.shadowColor = 'rgba(8, 17, 34, 0.55)'
+    ctx.shadowBlur = 6
+    ctx.shadowOffsetY = 1
     ctx.font = `12px ${anonymousProFontFamily}`
-    ctx.textAlign = 'right'
+    ctx.textAlign = 'center'
     ctx.textBaseline = 'alphabetic'
-    ctx.fillText('horizon / 0 deg', scene.horizon.labelPoint.x - 10, scene.horizon.labelPoint.y - 10)
+    ctx.fillText('horizon / 0 deg', scene.horizon.labelPoint.x, scene.horizon.labelPoint.y - 10)
   }
 
   ctx.restore()

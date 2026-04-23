@@ -16,7 +16,6 @@ import {
   isPointWithinViewport,
   normalizeAngle,
   projectSkyPositionSafe,
-  projectSkyPositionToViewportEdge,
 } from './utils'
 
 type BuildSkyViewportSceneOptions = {
@@ -233,7 +232,7 @@ export function buildSkyViewportScene(
             major: Math.abs(altitude) % SKY_GRID_MAJOR_INCREMENT === 0,
             label: `${altitude > 0 ? '+' : ''}${altitude}\u00B0`,
             paths,
-            labelPoint: getGuideLabelPoint(paths, 'left', width, height),
+            labelPoint: getGuideLabelPoint(paths, 'center', width, height),
           }
         })
         .filter(({ paths }) => paths.length > 0)
@@ -258,17 +257,9 @@ export function buildSkyViewportScene(
             major: azimuth % SKY_GRID_MAJOR_INCREMENT === 0,
             label: `${formatCompassLabel(azimuth)} ${azimuth}\u00B0`,
             paths,
-            labelPoint:
-              azimuth % SKY_GRID_MAJOR_INCREMENT === 0
-                ? projectSkyPositionToViewportEdge(
-                    { azimuth, altitude: 0 },
-                    viewCenter,
-                    width,
-                    height,
-                    18,
-                    verticalViewAngle,
-                  )
-                : null,
+            labelPoint: azimuth % SKY_GRID_MAJOR_INCREMENT === 0
+              ? getHorizonGuideLabelPoint(azimuth, viewCenter, width, height, verticalViewAngle)
+              : null,
           }
         })
         .filter(({ paths }) => paths.length > 0)
@@ -287,7 +278,7 @@ export function buildSkyViewportScene(
       horizonPaths.length > 0
         ? {
             paths: horizonPaths,
-            labelPoint: getGuideLabelPoint(horizonPaths, 'right', width, height),
+            labelPoint: getGuideLabelPoint(horizonPaths, 'center', width, height),
           }
         : null,
     moon:
@@ -460,7 +451,7 @@ function sampleAzimuthGuide(azimuth: number) {
 
 function getGuideLabelPoint(
   paths: ScreenPoint[][],
-  preference: 'left' | 'bottom' | 'right',
+  preference: 'left' | 'bottom' | 'right' | 'center',
   width: number,
   height: number,
 ): ScreenPoint | null {
@@ -480,7 +471,41 @@ function getGuideLabelPoint(
     return points.reduce((best, point) => (point.x > best.x ? point : best))
   }
 
+  if (preference === 'center') {
+    const centerX = width / 2
+    const centerY = height / 2
+
+    return points.reduce((best, point) =>
+      Math.hypot(point.x - centerX, point.y - centerY) <
+      Math.hypot(best.x - centerX, best.y - centerY)
+        ? point
+        : best,
+    )
+  }
+
   return points.reduce((best, point) => (point.y > best.y ? point : best))
+}
+
+function getHorizonGuideLabelPoint(
+  azimuth: number,
+  viewCenter: ViewCenter,
+  width: number,
+  height: number,
+  verticalViewAngle?: number,
+): ScreenPoint | null {
+  const projected = projectSkyPositionSafe(
+    { azimuth, altitude: 0 },
+    viewCenter,
+    width,
+    height,
+    verticalViewAngle,
+  )
+
+  if (!projected || !isPointWithinViewport(projected.x, projected.y, width, height, 0)) {
+    return null
+  }
+
+  return projected
 }
 
 function getConstellationLabelPlacement(

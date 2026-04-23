@@ -29,6 +29,7 @@ import {
 } from '@/lib/sky/utils'
 import type { SkyDataset, SkyFocus } from '@/lib/types'
 import { PageMobileNav } from '@/components/site-nav'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -161,9 +162,12 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       VANCOUVER_LOCATION,
       initialNow,
     )
+    const initialViewLabel = formatCompassLabel(initialSnapshot.current.position.azimuth)
+    const initialTiltLabel = formatHudAltitudeLabel(initialSnapshot.current.position.altitude)
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
-    const statusLineRef = useRef<HTMLParagraphElement | null>(null)
+    const tiltValueRef = useRef<HTMLSpanElement | null>(null)
+    const viewValueRef = useRef<HTMLSpanElement | null>(null)
     const snapshotRef = useRef<SkySnapshot>(initialSnapshot)
     const sceneRef = useRef<SkyScene | null>(null)
     const viewCenterRef = useRef<ViewCenter>({
@@ -185,24 +189,20 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
     const [snapshot, setSnapshot] = useState(initialSnapshot)
     const [isDetailsOpen, setIsDetailsOpen] = useState(true)
     const [isCoarsePointer, setIsCoarsePointer] = useState(false)
+    const [showGuides, setShowGuides] = useState(true)
     const [verticalViewAngle, setVerticalViewAngle] = useState(VERTICAL_VIEW_ANGLE)
 
-    const updateStatusLine = useEffectEvent((nextSnapshot?: SkySnapshot) => {
-      const snapshotValue = nextSnapshot ?? snapshotRef.current
+    const updateStatusHud = useEffectEvent(() => {
       const viewCenter = viewCenterRef.current
-      const statusLine = statusLineRef.current
+      const tiltValue = tiltValueRef.current
+      const viewValue = viewValueRef.current
 
-      if (!snapshotValue || !viewCenter || !statusLine) {
+      if (!viewCenter || !tiltValue || !viewValue) {
         return
       }
 
-      statusLine.textContent = [
-        snapshotValue.location.label,
-        formatClock(snapshotValue.now, snapshotValue.location.timezone),
-        `view ${formatCompassLabel(viewCenter.azimuth)}`,
-        `tilt ${formatAltitudeLabel(viewCenter.altitude)}`,
-        `moon ${getMoonPhaseLabel(snapshotValue.moon.phaseDegrees)} ${formatCompassLabel(snapshotValue.moon.position.azimuth)} ${formatAltitudeLabel(snapshotValue.moon.position.altitude)}`,
-      ].join(' / ')
+      viewValue.textContent = formatCompassLabel(viewCenter.azimuth)
+      tiltValue.textContent = formatHudAltitudeLabel(viewCenter.altitude)
     })
 
     const drawCanvas = useEffectEvent(() => {
@@ -224,6 +224,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         isCoarsePointer,
         isDragging: dragStateRef.current?.moved === true,
       })
+      const shouldShowGuides = performanceProfile.showGuides && showGuides
       const surface = resizeSkyCanvas(canvas, performanceProfile.maxDpr)
 
       if (!surface) {
@@ -242,7 +243,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
           maxFieldStars: performanceProfile.maxFieldStars,
           maxReferenceStars: performanceProfile.maxReferenceStars,
           edgeInterpolationSteps: performanceProfile.edgeInterpolationSteps,
-          showGuides: performanceProfile.showGuides,
+          showGuides: shouldShowGuides,
           verticalViewAngle: verticalViewAngleRef.current,
         },
       )
@@ -254,7 +255,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         surface,
         selectedSignKey,
         focus: skyFocus,
-        showGuide: performanceProfile.showGuides,
+        showGuide: shouldShowGuides,
         showFieldHalos: performanceProfile.showFieldHalos,
         showReferenceLabels: performanceProfile.showReferenceLabels,
         constellationLabelMode: performanceProfile.constellationLabelMode,
@@ -281,7 +282,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
     })
 
     const moveViewToCenter = useEffectEvent(
-      (nextCenter: ViewCenter, moveMode: Exclude<ViewMoveMode, 'none'>, sourceSnapshot?: SkySnapshot) => {
+      (nextCenter: ViewCenter, moveMode: Exclude<ViewMoveMode, 'none'>) => {
         const targetCenter = {
           azimuth: normalizeAngle(nextCenter.azimuth),
           altitude: clampViewAltitude(nextCenter.altitude),
@@ -295,7 +296,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
           window.matchMedia('(prefers-reduced-motion: reduce)').matches
         ) {
           viewCenterRef.current = targetCenter
-          updateStatusLine(sourceSnapshot)
+          updateStatusHud()
           scheduleRender()
           return
         }
@@ -307,7 +308,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
 
         if (travel < 0.3) {
           viewCenterRef.current = targetCenter
-          updateStatusLine(sourceSnapshot)
+          updateStatusHud()
           scheduleRender()
           return
         }
@@ -326,7 +327,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
             altitude: clampViewAltitude(startCenter.altitude + altitudeDelta * eased),
           }
 
-          updateStatusLine(sourceSnapshot)
+          updateStatusHud()
           drawCanvas()
 
           if (progress < 1) {
@@ -354,14 +355,10 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
           return
         }
 
-        moveViewToCenter(
-          {
-            azimuth: signEntry.position.azimuth,
-            altitude: signEntry.position.altitude,
-          },
-          moveMode,
-          snapshotValue,
-        )
+        moveViewToCenter({
+          azimuth: signEntry.position.azimuth,
+          altitude: signEntry.position.altitude,
+        }, moveMode)
       },
     )
 
@@ -378,14 +375,10 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
           return
         }
 
-        moveViewToCenter(
-          {
-            azimuth: star.position.azimuth,
-            altitude: star.position.altitude,
-          },
-          moveMode,
-          snapshotValue,
-        )
+        moveViewToCenter({
+          azimuth: star.position.azimuth,
+          altitude: star.position.altitude,
+        }, moveMode)
       },
     )
 
@@ -449,9 +442,9 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         return
       }
 
-      updateStatusLine(nextSnapshot)
-      scheduleRender()
-    })
+        updateStatusHud()
+        scheduleRender()
+      })
 
     const getCanvasPoint = useEffectEvent((event: PointerEvent) => {
       const canvas = canvasRef.current
@@ -508,6 +501,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
 
     useEffect(() => {
       const savedSign = readStorage<string>(SKY_STORAGE_KEYS.sign, DEFAULT_SIGN_KEY)
+      const savedGuideSetting = readStorage<string>(SKY_STORAGE_KEYS.guide, 'true')
       const frame = window.requestAnimationFrame(() => {
         if (dataset.allConstellations.some((sign) => sign.key === savedSign)) {
           recenterNextSnapshotRef.current = true
@@ -517,6 +511,8 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
             signKey: savedSign,
           })
         }
+
+        setShowGuides(savedGuideSetting !== 'false')
       })
 
       return () => {
@@ -529,6 +525,10 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
     }, [selectedSignKey])
 
     useEffect(() => {
+      writeStorage(SKY_STORAGE_KEYS.guide, showGuides ? 'true' : 'false')
+    }, [showGuides])
+
+    useEffect(() => {
       const shouldRecenter = recenterNextSnapshotRef.current || !viewCenterRef.current
       recenterNextSnapshotRef.current = false
       syncSnapshot(shouldRecenter)
@@ -539,7 +539,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
     }, [now])
 
     useEffect(() => {
-      updateStatusLine()
+      updateStatusHud()
       scheduleRender()
     }, [selectedSignKey, skyFocus, snapshot])
 
@@ -597,6 +597,10 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
       verticalViewAngleRef.current = verticalViewAngle
       scheduleRender()
     }, [verticalViewAngle])
+
+    useEffect(() => {
+      scheduleRender()
+    }, [showGuides])
 
     useEffect(() => {
       const canvas = canvasRef.current
@@ -691,7 +695,7 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
         }
 
         event.preventDefault()
-        updateStatusLine()
+        updateStatusHud()
         scheduleRender()
       }
 
@@ -800,12 +804,6 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
             data-details-open={isDetailsOpen ? 'true' : 'false'}
           >
             <Card className="sky-stage">
-              <div className="sky-stage__header">
-                <div className="sky-stage__tools">
-                  <p className="sky-stage__status" id="sky-status-line" ref={statusLineRef} />
-                </div>
-              </div>
-
               <div className="sky-canvas-shell">
                 <canvas
                   ref={canvasRef}
@@ -813,6 +811,37 @@ export const NightSkySection = forwardRef<HTMLElement, NightSkySectionProps>(
                   id="sky-canvas"
                   aria-label={`${selectedSign.name} constellation preview in night mode. Drag to pan and click visible stars or constellations for details.`}
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="sky-canvas-toggle"
+                  aria-pressed={showGuides}
+                  onClick={() => {
+                    setShowGuides((current) => !current)
+                  }}
+                >
+                  {showGuides ? 'Hide grid' : 'Show grid'}
+                </Button>
+                <Badge variant="outline" className="sky-canvas-status">
+                  <span className="sky-canvas-status__row">
+                    <span>{snapshot.location.label}</span>
+                    <span>{formatClock(snapshot.now, snapshot.location.timezone)}</span>
+                  </span>
+                  <span className="sky-canvas-status__row sky-canvas-status__row--emphasis">
+                    <span>
+                      View <span ref={viewValueRef}>{initialViewLabel}</span>
+                    </span>
+                    <span>
+                      Tilt <span ref={tiltValueRef}>{initialTiltLabel}</span>
+                    </span>
+                  </span>
+                  <span className="sky-canvas-status__row">
+                    <span>Moon {getMoonPhaseLabel(snapshot.moon.phaseDegrees)}</span>
+                    <span>{formatCompassLabel(snapshot.moon.position.azimuth)}</span>
+                    <span>{formatAltitudeLabel(snapshot.moon.position.altitude)}</span>
+                  </span>
+                </Badge>
                 <div className="sky-canvas-zoom" aria-label="Sky zoom controls">
                   <Button
                     variant="outline"
@@ -1133,6 +1162,11 @@ function formatStarMagnitude(value: number): string {
 
 function getVisibilityLabel(altitude: number): string {
   return altitude > 0 ? 'Visible now' : 'Below horizon'
+}
+
+function formatHudAltitudeLabel(value: number): string {
+  const rounded = Math.round(value)
+  return `${rounded > 0 ? '+' : ''}${rounded}\u00B0`
 }
 
 function getMoonPhaseLabel(phaseDegrees: number): string {
