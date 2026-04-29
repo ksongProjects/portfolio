@@ -594,8 +594,21 @@ code {
 }
 
 .monograph-layout > .monograph-list {
+  position: relative;
   flex: 1.35 1 28rem;
   min-width: 0;
+}
+
+.monograph-list__measure {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: inherit;
+  width: 100%;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .monograph-intro h2 {
